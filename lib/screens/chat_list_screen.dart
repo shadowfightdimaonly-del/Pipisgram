@@ -13,6 +13,7 @@ class ChatListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chatService = ChatService();
+    final authService = AuthService(); // Наша пацанская авторизация
 
     return Scaffold(
       appBar: AppBar(
@@ -29,7 +30,7 @@ class ChatListScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Выйти',
-            onPressed: () => AuthService().logout(),
+            onPressed: () => authService.logout(),
           ),
         ],
       ),
@@ -39,9 +40,10 @@ class ChatListScreen extends StatelessWidget {
           final chats = snapshot.data ?? [];
 
           return ListView.builder(
-            // +1 — под спецпункт "Командная строка", он всегда первый в списке
-            itemCount: chats.length + 1,
+            // +2 — под два спецпункта: 1. Командная строка, 2. Избранное
+            itemCount: chats.length + 2,
             itemBuilder: (context, index) {
+              // 1. Первый элемент всегда Командная строка
               if (index == 0) {
                 return _CommandLineTile(
                   onTap: () => Navigator.push(
@@ -52,7 +54,29 @@ class ChatListScreen extends StatelessWidget {
                 );
               }
 
-              final chat = chats[index - 1];
+              // 2. Второй элемент — наше заветное Избранное!
+              if (index == 1) {
+                return _SavedMessagesTile(
+                  onTap: () {
+                    // Выдергиваем текущего залогиненного юзера (тебя!)
+                    final currentUser = authService.currentUser; 
+                    if (currentUser != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatScreen(
+                            chatId: currentUser.uid, // Твой личный ID чата с самим собой!
+                            otherUsername: 'Избранное 🔒',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                );
+              }
+
+              // Сдвигаем индекс чатов на -2 из-за двух верхних спецпанелей
+              final chat = chats[index - 2];
               return ListTile(
                 leading: CircleAvatar(
                   child: Text(chat.otherUsername.isNotEmpty
@@ -109,13 +133,33 @@ class _CommandLineTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: CircleAvatar(
+      leading: const CircleAvatar(
         backgroundColor: Colors.black87,
-        child: const Icon(Icons.terminal, color: Colors.greenAccent),
+        child: Icon(Icons.terminal, color: Colors.greenAccent),
       ),
       title: const Text('Командная строка',
           style: TextStyle(fontWeight: FontWeight.w600)),
       subtitle: const Text('Системная консоль и логи'),
+      onTap: onTap,
+    );
+  }
+}
+
+/// НОВЫЙ ХИТБОКС ПРАЙМ-ТАЙМА: Спецпункт "Избранное"
+class _SavedMessagesTile extends StatelessWidget {
+  final VoidCallback onTap;
+  const _SavedMessagesTile({required this.required, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: const CircleAvatar(
+        backgroundColor: Colors.blueGrey, // Строгий хакерский цвет
+        child: Icon(Icons.bookmark, color: Colors.cyanAccent), // Неоновая закладка Сириуса!
+      ),
+      title: const Text('Избранное',
+          style: TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: const Text('🐾 Мысли Пиписа, коды и заметки'),
       onTap: onTap,
     );
   }
