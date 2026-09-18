@@ -18,7 +18,7 @@ def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '
 
 android {
     namespace "com.pipisgram.app"
-    compileSdk 34
+    compileSdk 36
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -35,10 +35,9 @@ android {
     }
 
     defaultConfig {
-        // ВАЖНО: должен совпадать с package name в Firebase Console
         applicationId "com.pipisgram.app"
         minSdk 23
-        targetSdk 34
+        targetSdk 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
@@ -46,8 +45,6 @@ android {
 
     buildTypes {
         release {
-            // Пока подписываем debug-ключом, чтобы можно было легко собрать.
-            // Для публикации в Google Play позже понадобится свой keystore.
             signingConfig signingConfigs.debug
             minifyEnabled false
             shrinkResources false
