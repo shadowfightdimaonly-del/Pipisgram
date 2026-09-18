@@ -1,0 +1,38 @@
+name: chatapp
+description: Приватный мессенджер для своих
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # Firebase
+  firebase_core: ^2.27.0
+  firebase_auth: ^4.17.4
+  cloud_firestore: ^4.15.4
+  firebase_storage: ^11.6.6
+  firebase_messaging: ^14.7.19
+
+  # UI / utils
+  intl: ^0.19.0
+  image_picker: ^1.0.7
+  cached_network_image: ^3.3.1
+  uuid: ^4.3.3
+
+  # Прокси (SOCKS5) для обхода региональных ограничений
+  socks5_proxy: ^1.0.4
+  http: ^1.2.0
+  shared_preferences: ^2.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
