@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "920058138901",
+    "project_id": "pipisgram-afc20",
+    "storage_bucket": "pipisgram-afc20.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:920058138901:android:ffa43782b678ce75c4d91c",
+        "android_client_info": {
+          "package_name": "com.pipisgram.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAy1XT2hVRuFAc98YU2E8FhUMoZ9AHOYbQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
