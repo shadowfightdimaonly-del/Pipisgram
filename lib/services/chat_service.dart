@@ -20,7 +20,15 @@ class ChatService {
       for (var doc in snap.docs) {
         final data = doc.data();
         final participants = List<String>.from(data['participants']);
-        final otherUid = participants.firstWhere((id) => id != _myUid);
+        final isSelfChat = data['isSelfChat'] == true;
+
+        final otherUid = isSelfChat
+            ? _myUid
+            : participants.firstWhere(
+                (id) => id != _myUid,
+                orElse: () => _myUid,
+              );
+
         final otherUserDoc = await _db.collection('users').doc(otherUid).get();
         final otherUserData = otherUserDoc.data() ?? {};
 
@@ -30,7 +38,9 @@ class ChatService {
           lastMessage: data['lastMessage'] ?? '',
           lastMessageTime: (data['lastMessageTime'] as Timestamp?)?.toDate() ??
               DateTime.now(),
-          otherUsername: otherUserData['username'] ?? 'Неизвестный',
+          otherUsername: isSelfChat
+              ? 'Избранное'
+              : (otherUserData['username'] ?? 'Неизвестный'),
           otherAvatarUrl: otherUserData['avatarUrl'],
           unreadCount: (data['unread_$_myUid'] ?? 0) as int,
         ));
@@ -39,22 +49,32 @@ class ChatService {
     });
   }
 
-  /// Создать чат с пользователем по его username (или вернуть существующий)
+  /// Создать чат с пользователем по его uid (или вернуть существующий).
+  /// Если otherUid == свой uid — это "Избранное" (чат с самим собой).
   Future<String> getOrCreateChat(String otherUid) async {
+    final isSelfChat = otherUid == _myUid;
+
     final existing = await _db
         .collection('chats')
         .where('participants', arrayContains: _myUid)
         .get();
 
     for (var doc in existing.docs) {
-      final participants = List<String>.from(doc['participants']);
-      if (participants.contains(otherUid)) {
+      final data = doc.data();
+      final participants = List<String>.from(data['participants']);
+      final docIsSelfChat = data['isSelfChat'] == true;
+
+      if (isSelfChat && docIsSelfChat) {
+        return doc.id;
+      }
+      if (!isSelfChat && !docIsSelfChat && participants.contains(otherUid)) {
         return doc.id;
       }
     }
 
     final newChat = await _db.collection('chats').add({
-      'participants': [_myUid, otherUid],
+      'participants': isSelfChat ? [_myUid] : [_myUid, otherUid],
+      'isSelfChat': isSelfChat,
       'lastMessage': '',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
