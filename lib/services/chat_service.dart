@@ -42,6 +42,7 @@ class ChatService {
               ? 'Избранное'
               : (otherUserData['username'] ?? 'Неизвестный'),
           otherAvatarUrl: otherUserData['avatarUrl'],
+          otherUid: otherUid,
           unreadCount: (data['unread_$_myUid'] ?? 0) as int,
         ));
       }
