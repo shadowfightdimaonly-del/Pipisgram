@@ -20,7 +20,7 @@ class ChatListScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Чаты'),
+        title: const Text('Pipisgram'),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline),
@@ -127,6 +127,30 @@ class ChatListScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                onLongPress: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(chat.isGroup ? 'Удалить группу?' : 'Удалить чат?'),
+                      content: Text(
+                          'Все сообщения в "${chat.otherUsername}" будут удалены безвозвратно.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Отмена'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Удалить',
+                              style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) {
+                    await chatService.deleteChat(chat.id);
+                  }
+                },
               );
             },
           );
