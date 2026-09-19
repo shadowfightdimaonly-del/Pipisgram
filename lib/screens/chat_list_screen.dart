@@ -8,6 +8,7 @@ import 'command_line_screen.dart';
 import 'proxy_settings_screen.dart';
 import 'profile_settings_screen.dart';
 import 'new_chat_screen.dart';
+import 'new_group_screen.dart';
 
 class ChatListScreen extends StatelessWidget {
   const ChatListScreen({super.key});
@@ -19,7 +20,7 @@ class ChatListScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pipisgram'),
+        title: const Text('Чаты'),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline),
@@ -85,12 +86,14 @@ class ChatListScreen extends StatelessWidget {
               return ListTile(
                 leading: CircleAvatar(
                   backgroundColor: Color(chat.otherProfileColor),
-                  child: Text(
-                    chat.otherUsername.isNotEmpty
-                        ? chat.otherUsername[0].toUpperCase()
-                        : '?',
-                    style: const TextStyle(color: Colors.white),
-                  ),
+                  child: chat.isGroup
+                      ? const Icon(Icons.groups, color: Colors.white)
+                      : Text(
+                          chat.otherUsername.isNotEmpty
+                              ? chat.otherUsername[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(color: Colors.white),
+                        ),
                 ),
                 title: Text(chat.otherUsername),
                 subtitle: Text(
@@ -115,7 +118,7 @@ class ChatListScreen extends StatelessWidget {
                     builder: (context) => ChatScreen(
                       chatId: chat.id,
                       otherUsername: chat.otherUsername,
-                      otherUid: chat.otherUid,
+                      otherUid: chat.isGroup ? null : chat.otherUid,
                     ),
                   ),
                 ),
@@ -124,12 +127,28 @@ class ChatListScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add_comment_outlined),
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const NewChatScreen()),
-        ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: 'newGroup',
+            mini: true,
+            child: const Icon(Icons.group_add_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const NewGroupScreen()),
+            ),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton(
+            heroTag: 'newChat',
+            child: const Icon(Icons.add_comment_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const NewChatScreen()),
+            ),
+          ),
+        ],
       ),
     );
   }
