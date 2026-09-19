@@ -25,6 +25,23 @@ class _ChatScreenState extends State<ChatScreen> {
   final _chatService = ChatService();
   final _textCtrl = TextEditingController();
   final _myUid = FirebaseAuth.instance.currentUser!.uid;
+  bool _isGroup = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfGroup();
+  }
+
+  Future<void> _checkIfGroup() async {
+    final doc = await FirebaseFirestore.instance
+        .collection('chats')
+        .doc(widget.chatId)
+        .get();
+    if (mounted) {
+      setState(() => _isGroup = doc.data()?['isGroup'] == true);
+    }
+  }
 
   void _send() {
     final text = _textCtrl.text.trim();
@@ -84,6 +101,20 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            if (_isGroup && !isMine)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 2),
+                                child: Text(
+                                  '@${msg.senderUsername ?? "неизвестный"}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary,
+                                  ),
+                                ),
+                              ),
                             Text(
                               msg.text,
                               style: TextStyle(
