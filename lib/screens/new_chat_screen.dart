@@ -40,10 +40,13 @@ class _NewChatScreenState extends State<NewChatScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => ChatScreen(chatId: chatId, otherUsername: user.username),
+        builder: (_) => ChatScreen(
+          chatId: chatId,
+          otherUsername: user.username,
+          otherUid: user.uid,
+        ),
       ),
     );
-  }
 
   @override
   Widget build(BuildContext context) {
