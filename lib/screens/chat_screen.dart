@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../services/chat_service.dart';
 import '../models/message.dart';
@@ -7,11 +8,13 @@ import '../models/message.dart';
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String otherUsername;
+  final String? otherUid;
 
   const ChatScreen({
     super.key,
     required this.chatId,
     required this.otherUsername,
+    this.otherUid,
   });
 
   @override
@@ -33,7 +36,12 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.otherUsername)),
+      appBar: AppBar(
+        title: Text(widget.otherUsername),
+        subtitle: widget.otherUid == null
+            ? null
+            : _OnlineStatusText(myUid: _myUid, otherUid: widget.otherUid!),
+      ),
       body: Column(
         children: [
           Expanded(
@@ -133,6 +141,49 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Показывает "в сети" под именем собеседника — но только если
+/// сам текущий пользователь не скрыл свой статус (правило "видишь,
+/// только если сам показываешь").
+class _OnlineStatusText extends StatelessWidget {
+  final String myUid;
+  final String otherUid;
+
+  const _OnlineStatusText({required this.myUid, required this.otherUid});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream:
+          FirebaseFirestore.instance.collection('users').doc(myUid).snapshots(),
+      builder: (context, mySnap) {
+        final myData = mySnap.data?.data() as Map<String, dynamic>?;
+        final myShowStatus = myData?['showOnlineStatus'] ?? true;
+
+        if (!myShowStatus) return const SizedBox.shrink();
+
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(otherUid)
+              .snapshots(),
+          builder: (context, otherSnap) {
+            final otherData = otherSnap.data?.data() as Map<String, dynamic>?;
+            final isOnline = otherData?['online'] == true;
+
+            return Text(
+              isOnline ? 'в сети' : 'не в сети',
+              style: TextStyle(
+                fontSize: 12,
+                color: isOnline ? Colors.greenAccent : Colors.grey,
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
