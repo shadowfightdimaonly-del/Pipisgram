@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/message.dart';
 import '../models/chat.dart';
 import '../models/app_user.dart';
+import 'push_notification_service.dart';
 
 class ChatService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -165,6 +166,36 @@ class ChatService {
       'lastMessage': text,
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
+
+    // Отправляем push-уведомление получателю(ям), не блокируя основной поток
+    final chatDoc = await _db.collection('chats').doc(chatId).get();
+    final chatData = chatDoc.data();
+    if (chatData != null) {
+      final isGroup = chatData['isGroup'] == true;
+      final participants = List<String>.from(chatData['participants']);
+
+      if (isGroup) {
+        final groupName = chatData['groupName'] ?? 'Группа';
+        PushNotificationService.sendToGroup(
+          participantUids: participants,
+          excludeUid: _myUid,
+          title: groupName,
+          body: '@$myUsername: $text',
+        );
+      } else {
+        final otherUid = participants.firstWhere(
+          (id) => id != _myUid,
+          orElse: () => '',
+        );
+        if (otherUid.isNotEmpty) {
+          PushNotificationService.sendToUser(
+            targetUid: otherUid,
+            title: '@$myUsername',
+            body: text,
+          );
+        }
+      }
+    }
   }
 
   /// Удаляет чат целиком: сначала все сообщения внутри, потом сам документ чата.
