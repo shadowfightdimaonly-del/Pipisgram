@@ -49,7 +49,7 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
       _inputCtrl.clear();
       return;
     } else if (mainCommand == 'murder!') {
-      _print('🔮 MURDER! В воздухе пахнет фиолетовой пылью Даста...');
+      _print('🔮 MURDER! В воздухе пахнет фиолетовой пылью...');
       _inputCtrl.clear();
       return;
     }
@@ -58,9 +58,9 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
       case 'help':
         _print('''
 доступные команды:
-  whoami          — инфо о себе (без палева почты)
-  whoami @username— найти профиль пользователя в Pipisgram
-  ping            — проверить связь с Firestore
+  whoami          — информация о себе
+  whoami @username— найти профиль пользователя
+  ping            —проверитьс пинг
   clear           — очистить консоль
   users count     — сколько всего зарегистрировано пользователей
   version         — версия приложения''');
@@ -85,14 +85,14 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
             _print('👤 Имя в базе: $name');
             _print('🆔 Твой цифровой ID: ${u.uid.substring(0, 8)}... (Защищено)');
             _print('👑 Премиум статус: ${hasPremium ? "АКТИВЕН 🐾" : "Обычный юзер"}');
-            _print('🔒 Google Email скрыт ради безопасности!');
+            _print;
             _print('-----------------------------------------');
           } catch (e) {
             // Если документ еще не создан, выдаем базовый UID
             _print('uid: ${u.uid}\n🔒 Email скрыт из вывода.');
           }
         } 
-        // Если ввели "whoami @username" — ищем чужой профиль в Pipisgram!
+        // Если ввели "whoami @username" — найти чужой профиль
         else {
           final targetUser = parts[1];
           try {
