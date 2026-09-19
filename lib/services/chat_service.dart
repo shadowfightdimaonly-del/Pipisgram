@@ -43,6 +43,7 @@ class ChatService {
               : (otherUserData['username'] ?? 'Неизвестный'),
           otherAvatarUrl: otherUserData['avatarUrl'],
           otherUid: otherUid,
+          otherProfileColor: otherUserData['profileColor'] ?? 0xFF2AABEE,
           unreadCount: (data['unread_$_myUid'] ?? 0) as int,
         ));
       }
