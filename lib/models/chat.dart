@@ -6,6 +6,7 @@ class ChatPreview {
   final String otherUsername;
   final String? otherAvatarUrl;
   final String otherUid;
+  final int otherProfileColor;
   final int unreadCount;
 
   ChatPreview({
@@ -16,6 +17,7 @@ class ChatPreview {
     required this.otherUsername,
     this.otherAvatarUrl,
     required this.otherUid,
+    this.otherProfileColor = 0xFF2AABEE,
     this.unreadCount = 0,
   });
 }
