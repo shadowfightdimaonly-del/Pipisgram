@@ -55,9 +55,11 @@ class _NewChatScreenState extends State<NewChatScreen> {
             TextField(
               controller: _ctrl,
               decoration: InputDecoration(
-                labelText: 'Имя пользователя друна',
+                labelText: '@юзернейм друна',
+                hintText: 'например, @burmaldatik',
                 border: const OutlineInputBorder(),
                 errorText: _error,
+              ),
               ),
               onSubmitted: (_) => _startChat(),
             ),
