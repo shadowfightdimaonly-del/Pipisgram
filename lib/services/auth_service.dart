@@ -25,13 +25,30 @@ class AuthService {
     }
   }
 
-  Future<String?> login(String email, String password) async {
+  Future<String?> register(String email, String password, String username) async {
+    // Проверяем уникальность username ДО создания аккаунта
+    final existing = await _db
+        .collection('users')
+        .where('username', isEqualTo: username)
+        .limit(1)
+        .get();
+
+    if (existing.docs.isNotEmpty) {
+      return 'Это имя пользователя уже занято';
+    }
+
     try {
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
-      await _db.collection('users').doc(_auth.currentUser!.uid).update({
+      final cred = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      await _db.collection('users').doc(cred.user!.uid).set({
+        'username': username,
+        'email': email,
         'online': true,
+        'createdAt': FieldValue.serverTimestamp(),
       });
-      return null;
+      return null; // без ошибок
     } on FirebaseAuthException catch (e) {
       return _mapError(e.code);
     }
