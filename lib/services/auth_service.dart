@@ -8,24 +8,6 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
 
   Future<String?> register(String email, String password, String username) async {
-    try {
-      final cred = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      await _db.collection('users').doc(cred.user!.uid).set({
-        'username': username,
-        'email': email,
-        'online': true,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      return null; // без ошибок
-    } on FirebaseAuthException catch (e) {
-      return _mapError(e.code);
-    }
-  }
-
-  Future<String?> register(String email, String password, String username) async {
     // Проверяем уникальность username ДО создания аккаунта
     final existing = await _db
         .collection('users')
@@ -49,6 +31,23 @@ class AuthService {
         'createdAt': FieldValue.serverTimestamp(),
       });
       return null; // без ошибок
+    } on FirebaseAuthException catch (e) {
+      return _mapError(e.code);
+    }
+  }
+
+  Future<String?> login(String email, String password) async {
+    try {
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      final userDoc =
+          await _db.collection('users').doc(_auth.currentUser!.uid).get();
+      final showStatus = userDoc.data()?['showOnlineStatus'] ?? true;
+      if (showStatus) {
+        await _db.collection('users').doc(_auth.currentUser!.uid).update({
+          'online': true,
+        });
+      }
+      return null;
     } on FirebaseAuthException catch (e) {
       return _mapError(e.code);
     }
