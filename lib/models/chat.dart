@@ -8,6 +8,7 @@ class ChatPreview {
   final String otherUid;
   final int otherProfileColor;
   final int unreadCount;
+  final bool isGroup;
 
   ChatPreview({
     required this.id,
@@ -19,5 +20,6 @@ class ChatPreview {
     required this.otherUid,
     this.otherProfileColor = 0xFF2AABEE,
     this.unreadCount = 0,
+    this.isGroup = false,
   });
 }
