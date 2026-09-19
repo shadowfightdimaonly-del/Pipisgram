@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/chat_service.dart';
 import 'chat_screen.dart';
-import 'profile_settings_screen.dart';
 
 class NewChatScreen extends StatefulWidget {
   const NewChatScreen({super.key});
@@ -47,6 +46,7 @@ class _NewChatScreenState extends State<NewChatScreen> {
         ),
       ),
     );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,11 +59,10 @@ class _NewChatScreenState extends State<NewChatScreen> {
             TextField(
               controller: _ctrl,
               decoration: InputDecoration(
-                labelText: '@юзернейм друна',
+                labelText: '@юзернейм друга',
                 hintText: 'например, @burmaldatik',
                 border: const OutlineInputBorder(),
                 errorText: _error,
-              ),
               ),
               onSubmitted: (_) => _startChat(),
             ),
