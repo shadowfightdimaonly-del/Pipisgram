@@ -36,6 +36,6 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: "launcher_icon"
-  ios: true
+  ios: false
   image_path: "assets/images/app_icon.png"
   remove_alpha_ios: true
