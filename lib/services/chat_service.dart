@@ -82,9 +82,10 @@ class ChatService {
   }
 
   Future<AppUser?> findUserByUsername(String username) async {
+    final cleanUsername = username.trim().replaceFirst('@', '');
     final query = await _db
         .collection('users')
-        .where('username', isEqualTo: username)
+        .where('username', isEqualTo: cleanUsername)
         .limit(1)
         .get();
     if (query.docs.isEmpty) return null;
