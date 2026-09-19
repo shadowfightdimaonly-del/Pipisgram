@@ -5,6 +5,7 @@ class ChatPreview {
   final DateTime lastMessageTime;
   final String otherUsername;
   final String? otherAvatarUrl;
+  final String otherUid;
   final int unreadCount;
 
   ChatPreview({
@@ -14,6 +15,7 @@ class ChatPreview {
     required this.lastMessageTime,
     required this.otherUsername,
     this.otherAvatarUrl,
+    required this.otherUid,
     this.unreadCount = 0,
   });
 }
