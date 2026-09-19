@@ -1,31 +1,12 @@
 workflows:
-  generate-keystore:
-    name: Generate Keystore (one-time)
-    max_build_duration: 10
-    environment:
-      flutter: stable
-    scripts:
-      - name: Generate keystore
-        script: |
-          keytool -genkey -v \
-            -keystore /tmp/pipisgram_release.keystore \
-            -alias pipisgram \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -storepass pipisgram123 \
-            -keypass pipisgram123 \
-            -dname "CN=Pipisgram, OU=Pipisgram, O=Pipisgram, L=Unknown, S=Unknown, C=RU"
-          cp /tmp/pipisgram_release.keystore $CM_BUILD_DIR/pipisgram_release.keystore
-    artifacts:
-      - pipisgram_release.keystore
-
   android-release:
     name: Pipisgram Android Build
     max_build_duration: 30
     environment:
       flutter: stable
       java: 17
+      android_signing:
+        - pipisgram_release_key
     scripts:
       - name: Get Flutter packages
         script: flutter pub get
