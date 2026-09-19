@@ -166,4 +166,19 @@ class ChatService {
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
   }
+
+  /// Удаляет чат целиком: сначала все сообщения внутри, потом сам документ чата.
+  Future<void> deleteChat(String chatId) async {
+    final messagesSnap = await _db
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .get();
+
+    for (var doc in messagesSnap.docs) {
+      await doc.reference.delete();
+    }
+
+    await _db.collection('chats').doc(chatId).delete();
+  }
 }
