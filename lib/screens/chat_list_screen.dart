@@ -21,6 +21,14 @@ class ChatListScreen extends StatelessWidget {
         title: const Text('Чаты'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'Настройки профиля',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileSettingsScreen()),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.vpn_lock_outlined),
             tooltip: 'Настройки прокси',
             onPressed: () => Navigator.push(
