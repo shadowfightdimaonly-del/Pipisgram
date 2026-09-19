@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -8,7 +9,6 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
 
   Future<String?> register(String email, String password, String username) async {
-    // Проверяем уникальность username ДО создания аккаунта
     final existing = await _db
         .collection('users')
         .where('username', isEqualTo: username)
@@ -30,7 +30,10 @@ class AuthService {
         'online': true,
         'createdAt': FieldValue.serverTimestamp(),
       });
-      return null; // без ошибок
+
+      await OneSignal.login(cred.user!.uid);
+
+      return null;
     } on FirebaseAuthException catch (e) {
       return _mapError(e.code);
     }
@@ -47,6 +50,9 @@ class AuthService {
           'online': true,
         });
       }
+
+      await OneSignal.login(_auth.currentUser!.uid);
+
       return null;
     } on FirebaseAuthException catch (e) {
       return _mapError(e.code);
@@ -60,6 +66,7 @@ class AuthService {
         'lastSeen': DateTime.now().millisecondsSinceEpoch,
       });
     }
+    await OneSignal.logout();
     await _auth.signOut();
   }
 
