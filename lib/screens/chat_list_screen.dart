@@ -19,7 +19,7 @@ class ChatListScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Чаты'),
+        title: const Text('Pipisgram'),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline),
