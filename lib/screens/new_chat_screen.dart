@@ -28,7 +28,7 @@ class _NewChatScreenState extends State<NewChatScreen> {
     if (user == null) {
       setState(() {
         _loading = false;
-        _error = 'Пользователь не найден';
+        _error = 'друн не найден';
       });
       return;
     }
