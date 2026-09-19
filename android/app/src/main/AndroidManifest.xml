@@ -10,7 +10,7 @@
     <application
         android:label="Pipisgram"
         android:name="${applicationName}"
-        android:icon="@drawable/ic_launcher"
+        android:icon="@mipmap/launcher_icon"
         android:usesCleartextTraffic="false">
 
         <activity
