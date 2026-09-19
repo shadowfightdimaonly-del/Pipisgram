@@ -8,7 +8,8 @@ class ChatService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final String _myUid = FirebaseAuth.instance.currentUser!.uid;
 
-  /// Список чатов текущего пользователя, отсортирован по последнему сообщению
+  /// Список чатов текущего пользователя (личные + группы), отсортирован
+  /// по последнему сообщению
   Stream<List<ChatPreview>> chatsStream() {
     return _db
         .collection('chats')
@@ -21,6 +22,24 @@ class ChatService {
         final data = doc.data();
         final participants = List<String>.from(data['participants']);
         final isSelfChat = data['isSelfChat'] == true;
+        final isGroup = data['isGroup'] == true;
+
+        if (isGroup) {
+          chats.add(ChatPreview(
+            id: doc.id,
+            participants: participants,
+            lastMessage: data['lastMessage'] ?? '',
+            lastMessageTime:
+                (data['lastMessageTime'] as Timestamp?)?.toDate() ??
+                    DateTime.now(),
+            otherUsername: data['groupName'] ?? 'Группа',
+            otherUid: '',
+            otherProfileColor: data['groupColor'] ?? 0xFF546E7A,
+            unreadCount: (data['unread_$_myUid'] ?? 0) as int,
+            isGroup: true,
+          ));
+          continue;
+        }
 
         final otherUid = isSelfChat
             ? _myUid
@@ -51,7 +70,7 @@ class ChatService {
     });
   }
 
-  /// Создать чат с пользователем по его uid (или вернуть существующий).
+  /// Создать личный чат с пользователем по его uid (или вернуть существующий).
   /// Если otherUid == свой uid — это "Избранное" (чат с самим собой).
   Future<String> getOrCreateChat(String otherUid) async {
     final isSelfChat = otherUid == _myUid;
@@ -63,6 +82,8 @@ class ChatService {
 
     for (var doc in existing.docs) {
       final data = doc.data();
+      if (data['isGroup'] == true) continue;
+
       final participants = List<String>.from(data['participants']);
       final docIsSelfChat = data['isSelfChat'] == true;
 
@@ -77,6 +98,25 @@ class ChatService {
     final newChat = await _db.collection('chats').add({
       'participants': isSelfChat ? [_myUid] : [_myUid, otherUid],
       'isSelfChat': isSelfChat,
+      'isGroup': false,
+      'lastMessage': '',
+      'lastMessageTime': FieldValue.serverTimestamp(),
+    });
+    return newChat.id;
+  }
+
+  /// Создать новую группу с названием и списком участников (без создателя —
+  /// он добавляется автоматически).
+  Future<String> createGroup(String groupName, List<String> memberUids) async {
+    final participants = {_myUid, ...memberUids}.toList();
+
+    final newChat = await _db.collection('chats').add({
+      'participants': participants,
+      'isGroup': true,
+      'isSelfChat': false,
+      'groupName': groupName,
+      'groupColor': 0xFF546E7A,
+      'createdBy': _myUid,
       'lastMessage': '',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
@@ -109,8 +149,12 @@ class ChatService {
     final msgRef = _db.collection('chats').doc(chatId).collection('messages');
     final now = DateTime.now();
 
+    final myUserDoc = await _db.collection('users').doc(_myUid).get();
+    final myUsername = myUserDoc.data()?['username'] ?? 'Неизвестный';
+
     await msgRef.add({
       'senderId': _myUid,
+      'senderUsername': myUsername,
       'text': text,
       'type': 'text',
       'timestamp': now.millisecondsSinceEpoch,
