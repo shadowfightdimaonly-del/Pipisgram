@@ -55,29 +55,15 @@ class ChatListScreen extends StatelessWidget {
               if (index == 0) {
                 return _CommandLineTile(
                   onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CommandLineScreen()),
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(
+                      chatId: chat.id,
+                      otherUsername: chat.otherUsername,
+                      otherUid: chat.otherUid,
+                    ),
                   ),
-                );
-              }
-
-              if (index == 1) {
-                return _SavedMessagesTile(
-                  onTap: () async {
-                    final chatId = await chatService.getOrCreateChat(myUid);
-                    if (!context.mounted) return;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChatScreen(
-                          chatId: chatId,
-                          otherUsername: 'Избранное',
-                        ),
-                      ),
-                    );
-                  },
-                );
-              }
+                ),
 
               final chat = chats[index - 2];
               return ListTile(
