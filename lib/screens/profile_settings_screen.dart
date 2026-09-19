@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import '../services/image_upload_service.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   const ProfileSettingsScreen({super.key});
@@ -14,19 +17,21 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   final _myUid = FirebaseAuth.instance.currentUser!.uid;
 
   bool _loading = true;
+  bool _uploadingAvatar = false;
   bool _showOnlineStatus = true;
   String _username = '';
-  int _profileColorValue = 0xFF2AABEE; // цвет по умолчанию, как в приложении
+  String? _avatarUrl;
+  int _profileColorValue = 0xFF2AABEE;
 
   final List<Color> _colorOptions = const [
-    Color(0xFF2AABEE), // фирменный голубой
-    Color(0xFFE53935), // красный
-    Color(0xFFFB8C00), // оранжевый
-    Color(0xFFFDD835), // жёлтый
-    Color(0xFF43A047), // зелёный
-    Color(0xFF8E24AA), // фиолетовый
-    Color(0xFFD81B60), // розовый
-    Color(0xFF546E7A), // серо-синий
+    Color(0xFF2AABEE),
+    Color(0xFFE53935),
+    Color(0xFFFB8C00),
+    Color(0xFFFDD835),
+    Color(0xFF43A047),
+    Color(0xFF8E24AA),
+    Color(0xFFD81B60),
+    Color(0xFF546E7A),
   ];
 
   @override
@@ -41,6 +46,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     setState(() {
       _showOnlineStatus = data?['showOnlineStatus'] ?? true;
       _username = data?['username'] ?? '';
+      _avatarUrl = data?['avatarUrl'];
       _profileColorValue = data?['profileColor'] ?? 0xFF2AABEE;
       _loading = false;
     });
@@ -59,6 +65,38 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     await _db.collection('users').doc(_myUid).update({
       'profileColor': color.value,
     });
+  }
+
+  Future<void> _pickAndUploadAvatar() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+
+    setState(() => _uploadingAvatar = true);
+
+    final bytes = await File(picked.path).readAsBytes();
+    final url = await ImageUploadService.uploadImage(bytes);
+
+    if (url != null) {
+      await _db.collection('users').doc(_myUid).update({
+        'avatarUrl': url,
+      });
+      setState(() {
+        _avatarUrl = url;
+        _uploadingAvatar = false;
+      });
+    } else {
+      setState(() => _uploadingAvatar = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось загрузить фото')),
+        );
+      }
+    }
   }
 
   @override
@@ -80,18 +118,48 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          CircleAvatar(
-                            radius: 48,
-                            backgroundColor: Colors.white,
-                            child: Text(
-                              _username.isNotEmpty
-                                  ? _username[0].toUpperCase()
-                                  : '?',
-                              style: TextStyle(
-                                fontSize: 40,
-                                fontWeight: FontWeight.bold,
-                                color: profileColor,
-                              ),
+                          GestureDetector(
+                            onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
+                            child: Stack(
+                              children: [
+                                CircleAvatar(
+                                  radius: 48,
+                                  backgroundColor: Colors.white,
+                                  backgroundImage: _avatarUrl != null
+                                      ? NetworkImage(_avatarUrl!)
+                                      : null,
+                                  child: _avatarUrl == null
+                                      ? Text(
+                                          _username.isNotEmpty
+                                              ? _username[0].toUpperCase()
+                                              : '?',
+                                          style: TextStyle(
+                                            fontSize: 40,
+                                            fontWeight: FontWeight.bold,
+                                            color: profileColor,
+                                          ),
+                                        )
+                                      : null,
+                                ),
+                                if (_uploadingAvatar)
+                                  const Positioned.fill(
+                                    child: CircleAvatar(
+                                      backgroundColor: Colors.black45,
+                                      child: CircularProgressIndicator(
+                                          color: Colors.white),
+                                    ),
+                                  ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: CircleAvatar(
+                                    radius: 14,
+                                    backgroundColor: Colors.black87,
+                                    child: const Icon(Icons.camera_alt,
+                                        size: 16, color: Colors.white),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 12),
