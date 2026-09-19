@@ -6,6 +6,7 @@ import '../models/chat.dart';
 import 'chat_screen.dart';
 import 'command_line_screen.dart';
 import 'proxy_settings_screen.dart';
+import 'profile_settings_screen.dart';
 import 'new_chat_screen.dart';
 
 class ChatListScreen extends StatelessWidget {
@@ -55,15 +56,30 @@ class ChatListScreen extends StatelessWidget {
               if (index == 0) {
                 return _CommandLineTile(
                   onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChatScreen(
-                      chatId: chat.id,
-                      otherUsername: chat.otherUsername,
-                      otherUid: chat.otherUid,
-                    ),
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const CommandLineScreen()),
                   ),
-                ),
+                );
+              }
+
+              if (index == 1) {
+                return _SavedMessagesTile(
+                  onTap: () async {
+                    final chatId = await chatService.getOrCreateChat(myUid);
+                    if (!context.mounted) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(
+                          chatId: chatId,
+                          otherUsername: 'Избранное',
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }
 
               final chat = chats[index - 2];
               return ListTile(
@@ -95,6 +111,7 @@ class ChatListScreen extends StatelessWidget {
                     builder: (context) => ChatScreen(
                       chatId: chat.id,
                       otherUsername: chat.otherUsername,
+                      otherUid: chat.otherUid,
                     ),
                   ),
                 ),
