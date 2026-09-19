@@ -37,10 +37,15 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.otherUsername),
-        subtitle: widget.otherUid == null
-            ? null
-            : _OnlineStatusText(myUid: _myUid, otherUid: widget.otherUid!),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(widget.otherUsername),
+            if (widget.otherUid != null)
+              _OnlineStatusText(myUid: _myUid, otherUid: widget.otherUid!),
+          ],
+        ),
       ),
       body: Column(
         children: [
