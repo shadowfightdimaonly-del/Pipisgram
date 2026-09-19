@@ -86,14 +86,19 @@ class ChatListScreen extends StatelessWidget {
               return ListTile(
                 leading: CircleAvatar(
                   backgroundColor: Color(chat.otherProfileColor),
-                  child: chat.isGroup
-                      ? const Icon(Icons.groups, color: Colors.white)
-                      : Text(
-                          chat.otherUsername.isNotEmpty
-                              ? chat.otherUsername[0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(color: Colors.white),
-                        ),
+                  backgroundImage: (!chat.isGroup && chat.otherAvatarUrl != null)
+                      ? NetworkImage(chat.otherAvatarUrl!)
+                      : null,
+                  child: (!chat.isGroup && chat.otherAvatarUrl != null)
+                      ? null
+                      : (chat.isGroup
+                          ? const Icon(Icons.groups, color: Colors.white)
+                          : Text(
+                              chat.otherUsername.isNotEmpty
+                                  ? chat.otherUsername[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(color: Colors.white),
+                            )),
                 ),
                 title: Text(chat.otherUsername),
                 subtitle: Text(
