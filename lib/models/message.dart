@@ -3,6 +3,7 @@ enum MessageType { text, image, file, system }
 class Message {
   final String id;
   final String senderId;
+  final String? senderUsername;
   final String text;
   final MessageType type;
   final DateTime timestamp;
@@ -12,6 +13,7 @@ class Message {
   Message({
     required this.id,
     required this.senderId,
+    this.senderUsername,
     required this.text,
     this.type = MessageType.text,
     required this.timestamp,
@@ -23,6 +25,7 @@ class Message {
     return Message(
       id: id,
       senderId: map['senderId'] ?? '',
+      senderUsername: map['senderUsername'],
       text: map['text'] ?? '',
       type: MessageType.values.firstWhere(
         (e) => e.name == (map['type'] ?? 'text'),
@@ -39,6 +42,7 @@ class Message {
   Map<String, dynamic> toMap() {
     return {
       'senderId': senderId,
+      'senderUsername': senderUsername,
       'text': text,
       'type': type.name,
       'timestamp': timestamp.millisecondsSinceEpoch,
