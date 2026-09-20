@@ -253,7 +253,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         alignment: isMine
                             ? Alignment.centerRight
                             : Alignment.centerLeft,
-                        child: Container(
+                       child: Container(
                           margin: const EdgeInsets.symmetric(vertical: 4),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 8),
@@ -265,7 +265,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ? Theme.of(context).colorScheme.primary
                                 : Theme.of(context).colorScheme.surfaceVariant,
                             borderRadius: BorderRadius.circular(16),
-                          ),
+                          ), 
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
