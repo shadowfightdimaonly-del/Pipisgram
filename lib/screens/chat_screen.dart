@@ -25,7 +25,10 @@ class _ChatScreenState extends State<ChatScreen> {
   final _myUid = FirebaseAuth.instance.currentUser!.uid;
   bool _isGroup = false;
   bool _canEditOthersMessages = false;
-
+  double _myBubbleRadius = 16.0;
+  String? _myBubbleTexture;
+  double _otherBubbleRadius = 16.0;
+  String? _otherBubbleTexture;
   @override
   void initState() {
     super.initState();
