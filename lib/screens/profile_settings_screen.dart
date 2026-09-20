@@ -34,6 +34,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   String _userCode = '';
   String? _avatarUrl;
   String? _backgroundUrl;
+  String? _bubbleTextureUrl;
   int _profileColorValue = 0xFF2AABEE;
   String _bubbleStyle = 'rounded';
 
@@ -69,6 +70,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _userCode = data?['userCode'] ?? '—';
       _avatarUrl = data?['avatarUrl'];
       _backgroundUrl = data?['profileBackgroundUrl'];
+      _bubbleTextureUrl = data?['bubbleTextureUrl'];
       _profileColorValue = data?['profileColor'] ?? 0xFF2AABEE;
       _bubbleStyle = data?['bubbleStyle'] ?? 'rounded';
       _hasEditGift = data?['hasGiftEditMessages'] == true;
@@ -179,6 +181,45 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       'profileBackgroundUrl': FieldValue.delete(),
     });
     setState(() => _backgroundUrl = null);
+  }
+
+  Future<void> _pickAndUploadBubbleTexture() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 600,
+      imageQuality: 80,
+    );
+    if (picked == null) return;
+
+    setState(() => _uploadingBubble = true);
+
+    final bytes = await File(picked.path).readAsBytes();
+    final url = await ImageUploadService.uploadImage(bytes);
+
+    if (url != null) {
+      await _db.collection('users').doc(_myUid).update({
+        'bubbleTextureUrl': url,
+      });
+      setState(() {
+        _bubbleTextureUrl = url;
+        _uploadingBubble = false;
+      });
+    } else {
+      setState(() => _uploadingBubble = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось загрузить текстуру')),
+        );
+      }
+    }
+  }
+
+  Future<void> _removeBubbleTexture() async {
+    await _db.collection('users').doc(_myUid).update({
+      'bubbleTextureUrl': FieldValue.delete(),
+    });
+    setState(() => _bubbleTextureUrl = null);
   }
 
   @override
@@ -389,6 +430,68 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         }).toList(),
                       ),
                     ),
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
+                      child: Text(
+                        'Текстура твоих облачков',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: _uploadingBubble
+                                ? null
+                                : _pickAndUploadBubbleTexture,
+                            onLongPress: _bubbleTextureUrl != null
+                                ? _removeBubbleTexture
+                                : null,
+                            child: Container(
+                              width: 70,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: profileColor,
+                                borderRadius: BorderRadius.circular(12),
+                                image: _bubbleTextureUrl != null
+                                    ? DecorationImage(
+                                        image: NetworkImage(_bubbleTextureUrl!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: _uploadingBubble
+                                  ? const Center(
+                                      child: SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2, color: Colors.white),
+                                      ),
+                                    )
+                                  : (_bubbleTextureUrl == null
+                                      ? const Icon(Icons.add_photo_alternate_outlined,
+                                          color: Colors.white)
+                                      : null),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _bubbleTextureUrl != null
+                                  ? 'Нажми, чтобы заменить. Долгое нажатие — убрать.'
+                                  : 'Нажми, чтобы загрузить свой узор для облачков',
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey[500]),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       child: Container(
@@ -405,7 +508,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Твой код для друзей',
+                                  const Text('Твой код',
                                       style: TextStyle(fontSize: 12, color: Colors.grey)),
                                   Text(_userCode,
                                       style: const TextStyle(
