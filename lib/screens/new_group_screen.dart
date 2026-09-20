@@ -13,7 +13,7 @@ class NewGroupScreen extends StatefulWidget {
 class _NewGroupScreenState extends State<NewGroupScreen> {
   final _chatService = ChatService();
   final _groupNameCtrl = TextEditingController();
-  final _usernameCtrl = TextEditingController();
+  final _codeCtrl = TextEditingController();
 
   final List<AppUser> _members = [];
   bool _searching = false;
@@ -21,20 +21,20 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
   String? _error;
 
   Future<void> _addMember() async {
-    final username = _usernameCtrl.text.trim();
-    if (username.isEmpty) return;
+    final code = _codeCtrl.text.trim();
+    if (code.isEmpty) return;
 
     setState(() {
       _searching = true;
       _error = null;
     });
 
-    final user = await _chatService.findUserByUsername(username);
+    final user = await _chatService.findUserByCode(code);
 
     setState(() => _searching = false);
 
     if (user == null) {
-      setState(() => _error = 'Пользователь не найден');
+      setState(() => _error = 'Пользователь с таким кодом не найден');
       return;
     }
     if (_members.any((m) => m.uid == user.uid)) {
@@ -44,7 +44,7 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
 
     setState(() {
       _members.add(user);
-      _usernameCtrl.clear();
+      _codeCtrl.clear();
     });
   }
 
@@ -98,9 +98,10 @@ class _NewGroupScreenState extends State<NewGroupScreen> {
               children: [
                 Expanded(
                   child: TextField(
-                    controller: _usernameCtrl,
+                    controller: _codeCtrl,
+                    keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: '@юзернейм участника',
+                      labelText: 'Код участника (5 цифр)',
                       border: const OutlineInputBorder(),
                       errorText: _error,
                     ),
