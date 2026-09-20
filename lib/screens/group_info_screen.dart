@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/chat_service.dart';
-
+import 'view_profile_screen.dart';
 class GroupInfoScreen extends StatefulWidget {
   final String chatId;
   final String groupName;
