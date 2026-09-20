@@ -124,14 +124,30 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(widget.otherUsername),
-            if (widget.otherUid != null)
-              _OnlineStatusText(myUid: _myUid, otherUid: widget.otherUid!),
-          ],
+        title: GestureDetector(
+          onTap: _isGroup
+              ? () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => GroupInfoScreen(
+                        chatId: widget.chatId,
+                        groupName: widget.otherUsername,
+                      ),
+                    ),
+                  )
+              : null,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(widget.otherUsername),
+              if (widget.otherUid != null)
+                _OnlineStatusText(myUid: _myUid, otherUid: widget.otherUid!),
+              if (_isGroup)
+                const Text('нажми для управления группой',
+                    style: TextStyle(fontSize: 11, color: Colors.grey)),
+            ],
+          ),
         ),
       ),
       body: Column(
