@@ -1,10 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
 import '../services/chat_service.dart';
 import '../models/message.dart';
 import 'group_info_screen.dart';
+import 'view_profile_screen.dart';
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String otherUsername;
@@ -125,27 +122,67 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         title: GestureDetector(
-          onTap: _isGroup
-              ? () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => GroupInfoScreen(
-                        chatId: widget.chatId,
-                        groupName: widget.otherUsername,
-                      ),
-                    ),
-                  )
-              : null,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+          onTap: () {
+            if (_isGroup) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GroupInfoScreen(
+                    chatId: widget.chatId,
+                    groupName: widget.otherUsername,
+                  ),
+                ),
+              );
+            } else if (widget.otherUid != null) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      ViewProfileScreen(uid: widget.otherUid!),
+                ),
+              );
+            }
+          },
+          child: Row(
             children: [
-              Text(widget.otherUsername),
-              if (widget.otherUid != null)
-                _OnlineStatusText(myUid: _myUid, otherUid: widget.otherUid!),
-              if (_isGroup)
-                const Text('нажми для управления группой',
-                    style: TextStyle(fontSize: 11, color: Colors.grey)),
+              if (!_isGroup && widget.otherUid != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: StreamBuilder<DocumentSnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(widget.otherUid)
+                        .snapshots(),
+                    builder: (context, snap) {
+                      final data = snap.data?.data() as Map<String, dynamic>?;
+                      final avatarUrl = data?['avatarUrl'];
+                      return CircleAvatar(
+                        radius: 18,
+                        backgroundImage:
+                            avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                        child: avatarUrl == null
+                            ? Text(widget.otherUsername.isNotEmpty
+                                ? widget.otherUsername[0].toUpperCase()
+                                : '?')
+                            : null,
+                      );
+                    },
+                  ),
+                ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(widget.otherUsername),
+                    if (widget.otherUid != null)
+                      _OnlineStatusText(myUid: _myUid, otherUid: widget.otherUid!),
+                    if (_isGroup)
+                      const Text('нажми для управления группой',
+                          style: TextStyle(fontSize: 11, color: Colors.grey)),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
