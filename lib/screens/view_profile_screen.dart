@@ -158,6 +158,13 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                   ],
                 ),
               ),
+              const SizedBox(height: 4),
+              Center(
+                child: Text(
+                  'код: ${data?['userCode'] ?? '—'}',
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+              ),
               if (visibleGifts.isNotEmpty) ...[
                 const SizedBox(height: 20),
                 Wrap(
