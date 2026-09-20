@@ -19,9 +19,15 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   bool _loading = true;
   bool _uploadingAvatar = false;
   bool _showOnlineStatus = true;
+  bool _showGifts = false;
+  bool _showTakeoverGift = false;
   String _username = '';
   String? _avatarUrl;
   int _profileColorValue = 0xFF2AABEE;
+
+  bool _hasEditGift = false;
+  bool _hasAvatarGift = false;
+  bool _hasTakeoverGift = false;
 
   final List<Color> _colorOptions = const [
     Color(0xFF2AABEE),
@@ -45,9 +51,14 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     final data = doc.data();
     setState(() {
       _showOnlineStatus = data?['showOnlineStatus'] ?? true;
+      _showGifts = data?['showGifts'] ?? false;
+      _showTakeoverGift = data?['showTakeoverGift'] ?? false;
       _username = data?['username'] ?? '';
       _avatarUrl = data?['avatarUrl'];
       _profileColorValue = data?['profileColor'] ?? 0xFF2AABEE;
+      _hasEditGift = data?['hasGiftEditMessages'] == true;
+      _hasAvatarGift = data?['hasGiftChangeAvatars'] == true;
+      _hasTakeoverGift = data?['hasGiftGroupTakeover'] == true;
       _loading = false;
     });
   }
@@ -58,6 +69,16 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       'showOnlineStatus': value,
       if (!value) 'online': false,
     });
+  }
+
+  Future<void> _toggleShowGifts(bool value) async {
+    setState(() => _showGifts = value);
+    await _db.collection('users').doc(_myUid).update({'showGifts': value});
+  }
+
+  Future<void> _toggleShowTakeoverGift(bool value) async {
+    setState(() => _showTakeoverGift = value);
+    await _db.collection('users').doc(_myUid).update({'showTakeoverGift': value});
   }
 
   Future<void> _setProfileColor(Color color) async {
@@ -102,6 +123,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final profileColor = Color(_profileColorValue);
+    final hasAnyGift = _hasEditGift || _hasAvatarGift || _hasTakeoverGift;
 
     return Scaffold(
       body: _loading
@@ -240,6 +262,58 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       value: _showOnlineStatus,
                       onChanged: _toggleOnlineStatus,
                     ),
+                    if (hasAnyGift) ...[
+                      const Divider(height: 32),
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: Text(
+                          'Мои подарки',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey),
+                        ),
+                      ),
+                      if (_hasEditGift)
+                        const ListTile(
+                          leading: Icon(Icons.edit_outlined, color: Colors.blue),
+                          title: Text('Редактор сообщений'),
+                          dense: true,
+                        ),
+                      if (_hasAvatarGift)
+                        const ListTile(
+                          leading:
+                              Icon(Icons.image_outlined, color: Colors.green),
+                          title: Text('Право менять чужие аватарки'),
+                          dense: true,
+                        ),
+                      if (_hasEditGift || _hasAvatarGift)
+                        SwitchListTile(
+                          title: const Text('Показывать эти подарки в профиле'),
+                          subtitle:
+                              const Text('Другие увидят их у тебя в профиле'),
+                          value: _showGifts,
+                          onChanged: _toggleShowGifts,
+                        ),
+                      if (_hasTakeoverGift) ...[
+                        const Divider(height: 24),
+                        const ListTile(
+                          leading: Icon(Icons.warning_amber_rounded,
+                              color: Colors.deepOrange),
+                          title: Text('Власть над группами'),
+                          subtitle: Text(
+                              'Мощный подарок — по умолчанию скрыт от других'),
+                          dense: true,
+                        ),
+                        SwitchListTile(
+                          title: const Text('Показывать этот подарок другим'),
+                          subtitle: const Text(
+                              'Осторожно: люди будут знать о твоей власти над группами'),
+                          value: _showTakeoverGift,
+                          onChanged: _toggleShowTakeoverGift,
+                        ),
+                      ],
+                    ],
                   ]),
                 ),
               ],
