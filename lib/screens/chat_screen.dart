@@ -26,11 +26,13 @@ class _ChatScreenState extends State<ChatScreen> {
   final _textCtrl = TextEditingController();
   final _myUid = FirebaseAuth.instance.currentUser!.uid;
   bool _isGroup = false;
+  bool _canEditOthersMessages = false;
 
   @override
   void initState() {
     super.initState();
     _checkIfGroup();
+    _checkEditRights();
   }
 
   Future<void> _checkIfGroup() async {
@@ -43,11 +45,79 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Future<void> _checkEditRights() async {
+    final hasGift = await _chatService.hasEditMessagesGift();
+    if (mounted) {
+      setState(() => _canEditOthersMessages = hasGift);
+    }
+  }
+
   void _send() {
     final text = _textCtrl.text.trim();
     if (text.isEmpty) return;
     _chatService.sendMessage(widget.chatId, text);
     _textCtrl.clear();
+  }
+
+  void _showMessageActions(Message msg) {
+    final isMine = msg.senderId == _myUid;
+    final canEdit = isMine || (_isGroup && _canEditOthersMessages);
+
+    if (!canEdit) return;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Редактировать'),
+              onTap: () {
+                Navigator.pop(context);
+                _editMessageDialog(msg);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: const Text('Удалить', style: TextStyle(color: Colors.red)),
+              onTap: () async {
+                Navigator.pop(context);
+                await _chatService.deleteMessage(widget.chatId, msg.id);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _editMessageDialog(Message msg) {
+    final ctrl = TextEditingController(text: msg.text);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Редактировать сообщение'),
+        content: TextField(controller: ctrl, autofocus: true),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newText = ctrl.text.trim();
+              if (newText.isNotEmpty) {
+                await _chatService.editMessage(widget.chatId, msg.id, newText);
+              }
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('Сохранить'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -81,64 +151,93 @@ class _ChatScreenState extends State<ChatScreen> {
                   itemBuilder: (context, index) {
                     final msg = messages[index];
                     final isMine = msg.senderId == _myUid;
-                    return Align(
-                      alignment: isMine
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
-                        constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width * 0.75,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isMine
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.surfaceVariant,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (_isGroup && !isMine)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 2),
-                                child: Text(
-                                  '@${msg.senderUsername ?? "неизвестный"}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primary,
+                    return GestureDetector(
+                      onLongPress: () => _showMessageActions(msg),
+                      child: Align(
+                        alignment: isMine
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.of(context).size.width * 0.75,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isMine
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.surfaceVariant,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_isGroup && !isMine)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 2),
+                                  child: Text(
+                                    '@${msg.senderUsername ?? "неизвестный"}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
+                                    ),
                                   ),
                                 ),
+                              Text(
+                                msg.text,
+                                style: TextStyle(
+                                  color: isMine
+                                      ? Theme.of(context).colorScheme.onPrimary
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                ),
                               ),
-                            Text(
-                              msg.text,
-                              style: TextStyle(
-                                color: isMine
-                                    ? Theme.of(context).colorScheme.onPrimary
-                                    : Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
+                              const SizedBox(height: 2),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (msg.edited)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 4),
+                                      child: Text(
+                                        'изменено',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontStyle: FontStyle.italic,
+                                          color: (isMine
+                                                  ? Theme.of(context)
+                                                      .colorScheme
+                                                      .onPrimary
+                                                  : Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant)
+                                              .withOpacity(0.7),
+                                        ),
+                                      ),
+                                    ),
+                                  Text(
+                                    DateFormat('HH:mm').format(msg.timestamp),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: (isMine
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .onPrimary
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant)
+                                          .withOpacity(0.7),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              DateFormat('HH:mm').format(msg.timestamp),
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: (isMine
-                                        ? Theme.of(context).colorScheme.onPrimary
-                                        : Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant)
-                                    .withOpacity(0.7),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -181,9 +280,6 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
-/// Показывает "в сети" под именем собеседника — но только если
-/// сам текущий пользователь не скрыл свой статус (правило "видишь,
-/// только если сам показываешь").
 class _OnlineStatusText extends StatelessWidget {
   final String myUid;
   final String otherUid;
