@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import '../services/chat_service.dart';
 import '../models/message.dart';
-
+import 'group_info_screen.dart';
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String otherUsername;
