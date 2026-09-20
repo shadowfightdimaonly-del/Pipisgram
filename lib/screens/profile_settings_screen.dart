@@ -5,6 +5,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/image_upload_service.dart';
 
+const List<Map<String, dynamic>> bubbleStyles = [
+  {'id': 'rounded', 'name': 'Круглые', 'radius': 16.0},
+  {'id': 'sharp', 'name': 'Острые', 'radius': 4.0},
+  {'id': 'pill', 'name': 'Овальные', 'radius': 24.0},
+  {'id': 'square', 'name': 'Квадратные', 'radius': 0.0},
+];
+
 class ProfileSettingsScreen extends StatefulWidget {
   const ProfileSettingsScreen({super.key});
 
@@ -18,13 +25,16 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   bool _loading = true;
   bool _uploadingAvatar = false;
+  bool _uploadingBackground = false;
   bool _showOnlineStatus = true;
   bool _showGifts = false;
   bool _showTakeoverGift = false;
   String _username = '';
   String _userCode = '';
   String? _avatarUrl;
+  String? _backgroundUrl;
   int _profileColorValue = 0xFF2AABEE;
+  String _bubbleStyle = 'rounded';
 
   bool _hasEditGift = false;
   bool _hasAvatarGift = false;
@@ -57,7 +67,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _username = data?['username'] ?? '';
       _userCode = data?['userCode'] ?? '—';
       _avatarUrl = data?['avatarUrl'];
+      _backgroundUrl = data?['profileBackgroundUrl'];
       _profileColorValue = data?['profileColor'] ?? 0xFF2AABEE;
+      _bubbleStyle = data?['bubbleStyle'] ?? 'rounded';
       _hasEditGift = data?['hasGiftEditMessages'] == true;
       _hasAvatarGift = data?['hasGiftChangeAvatars'] == true;
       _hasTakeoverGift = data?['hasGiftGroupTakeover'] == true;
@@ -87,6 +99,13 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     setState(() => _profileColorValue = color.value);
     await _db.collection('users').doc(_myUid).update({
       'profileColor': color.value,
+    });
+  }
+
+  Future<void> _setBubbleStyle(String styleId) async {
+    setState(() => _bubbleStyle = styleId);
+    await _db.collection('users').doc(_myUid).update({
+      'bubbleStyle': styleId,
     });
   }
 
@@ -122,6 +141,45 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     }
   }
 
+  Future<void> _pickAndUploadBackground() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1200,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+
+    setState(() => _uploadingBackground = true);
+
+    final bytes = await File(picked.path).readAsBytes();
+    final url = await ImageUploadService.uploadImage(bytes);
+
+    if (url != null) {
+      await _db.collection('users').doc(_myUid).update({
+        'profileBackgroundUrl': url,
+      });
+      setState(() {
+        _backgroundUrl = url;
+        _uploadingBackground = false;
+      });
+    } else {
+      setState(() => _uploadingBackground = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось загрузить фон')),
+        );
+      }
+    }
+  }
+
+  Future<void> _removeBackground() async {
+    await _db.collection('users').doc(_myUid).update({
+      'profileBackgroundUrl': FieldValue.delete(),
+    });
+    setState(() => _backgroundUrl = null);
+  }
+
   @override
   Widget build(BuildContext context) {
     final profileColor = Color(_profileColorValue);
@@ -137,79 +195,108 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   pinned: true,
                   backgroundColor: profileColor,
                   flexibleSpace: FlexibleSpaceBar(
-                    background: Container(
-                      color: profileColor,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          GestureDetector(
-                            onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
-                            child: Stack(
-                              children: [
-                                CircleAvatar(
-                                  radius: 48,
-                                  backgroundColor: Colors.white,
-                                  backgroundImage: _avatarUrl != null
-                                      ? NetworkImage(_avatarUrl!)
-                                      : null,
-                                  child: _avatarUrl == null
-                                      ? Text(
-                                          _username.isNotEmpty
-                                              ? _username[0].toUpperCase()
-                                              : '?',
-                                          style: TextStyle(
-                                            fontSize: 40,
-                                            fontWeight: FontWeight.bold,
-                                            color: profileColor,
-                                          ),
-                                        )
-                                      : null,
-                                ),
-                                if (_uploadingAvatar)
-                                  const Positioned.fill(
+                    background: GestureDetector(
+                      onTap: _uploadingBackground ? null : _pickAndUploadBackground,
+                      onLongPress: _backgroundUrl != null ? _removeBackground : null,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: profileColor,
+                          image: _backgroundUrl != null
+                              ? DecorationImage(
+                                  image: NetworkImage(_backgroundUrl!),
+                                  fit: BoxFit.cover,
+                                  colorFilter: ColorFilter.mode(
+                                    Colors.black.withOpacity(0.25),
+                                    BlendMode.darken,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            GestureDetector(
+                              onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
+                              child: Stack(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 48,
+                                    backgroundColor: Colors.white,
+                                    backgroundImage: _avatarUrl != null
+                                        ? NetworkImage(_avatarUrl!)
+                                        : null,
+                                    child: _avatarUrl == null
+                                        ? Text(
+                                            _username.isNotEmpty
+                                                ? _username[0].toUpperCase()
+                                                : '?',
+                                            style: TextStyle(
+                                              fontSize: 40,
+                                              fontWeight: FontWeight.bold,
+                                              color: profileColor,
+                                            ),
+                                          )
+                                        : null,
+                                  ),
+                                  if (_uploadingAvatar)
+                                    const Positioned.fill(
+                                      child: CircleAvatar(
+                                        backgroundColor: Colors.black45,
+                                        child: CircularProgressIndicator(
+                                            color: Colors.white),
+                                      ),
+                                    ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
                                     child: CircleAvatar(
-                                      backgroundColor: Colors.black45,
-                                      child: CircularProgressIndicator(
-                                          color: Colors.white),
+                                      radius: 14,
+                                      backgroundColor: Colors.black87,
+                                      child: const Icon(Icons.camera_alt,
+                                          size: 16, color: Colors.white),
                                     ),
                                   ),
-                                Positioned(
-                                  bottom: 0,
-                                  right: 0,
-                                  child: CircleAvatar(
-                                    radius: 14,
-                                    backgroundColor: Colors.black87,
-                                    child: const Icon(Icons.camera_alt,
-                                        size: 16, color: Colors.white),
-                                  ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            _username.isEmpty ? '—' : '@$_username',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                            const SizedBox(height: 12),
+                            Text(
+                              _username.isEmpty ? '—' : '@$_username',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _showOnlineStatus ? 'в сети' : 'статус скрыт',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.white.withOpacity(0.85),
+                            const SizedBox(height: 4),
+                            Text(
+                              _showOnlineStatus ? 'в сети' : 'статус скрыт',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.white.withOpacity(0.85),
+                              ),
                             ),
-                          ),
-                        ],
+                            if (_uploadingBackground)
+                              const Padding(
+                                padding: EdgeInsets.only(top: 8),
+                                child: CircularProgressIndicator(
+                                    color: Colors.white),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
                 SliverList(
                   delegate: SliverChildListDelegate([
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: Text(
+                        'Нажми на фон, чтобы загрузить свой (долгое нажатие — убрать)',
+                        style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                      ),
+                    ),
                     const Padding(
                       padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
                       child: Text(
@@ -256,8 +343,53 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         }).toList(),
                       ),
                     ),
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
+                      child: Text(
+                        'Форма облачка сообщений',
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey),
+                      ),
+                    ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: bubbleStyles.map((style) {
+                          final isSelected = style['id'] == _bubbleStyle;
+                          return GestureDetector(
+                            onTap: () => _setBubbleStyle(style['id']),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? profileColor
+                                    : Theme.of(context)
+                                        .colorScheme
+                                        .surfaceVariant,
+                                borderRadius: BorderRadius.circular(
+                                    style['radius'] as double),
+                              ),
+                              child: Text(
+                                style['name'],
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : null,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
