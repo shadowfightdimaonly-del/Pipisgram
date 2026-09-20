@@ -30,10 +30,49 @@ class _ChatScreenState extends State<ChatScreen> {
   double _otherBubbleRadius = 16.0;
   String? _otherBubbleTexture;
   @override
+  @override
   void initState() {
     super.initState();
     _checkIfGroup();
     _checkEditRights();
+    _loadBubbleStyles();
+  }
+
+  Future<void> _loadBubbleStyles() async {
+    final myDoc =
+        await FirebaseFirestore.instance.collection('users').doc(_myUid).get();
+    final myData = myDoc.data();
+    final myStyleId = myData?['bubbleStyle'] ?? 'rounded';
+    final myStyle = bubbleStyles.firstWhere(
+      (s) => s['id'] == myStyleId,
+      orElse: () => bubbleStyles.first,
+    );
+
+    double otherRadius = 16.0;
+    String? otherTexture;
+    if (widget.otherUid != null) {
+      final otherDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.otherUid)
+          .get();
+      final otherData = otherDoc.data();
+      final otherStyleId = otherData?['bubbleStyle'] ?? 'rounded';
+      final otherStyle = bubbleStyles.firstWhere(
+        (s) => s['id'] == otherStyleId,
+        orElse: () => bubbleStyles.first,
+      );
+      otherRadius = otherStyle['radius'] as double;
+      otherTexture = otherData?['bubbleTextureUrl'];
+    }
+
+    if (mounted) {
+      setState(() {
+        _myBubbleRadius = myStyle['radius'] as double;
+        _myBubbleTexture = myData?['bubbleTextureUrl'];
+        _otherBubbleRadius = otherRadius;
+        _otherBubbleTexture = otherTexture;
+      });
+    }
   }
 
   Future<void> _checkIfGroup() async {
