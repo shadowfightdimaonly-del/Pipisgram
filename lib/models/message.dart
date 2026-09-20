@@ -9,6 +9,7 @@ class Message {
   final DateTime timestamp;
   final String? mediaUrl;
   final bool read;
+  final bool edited;
 
   Message({
     required this.id,
@@ -19,6 +20,7 @@ class Message {
     required this.timestamp,
     this.mediaUrl,
     this.read = false,
+    this.edited = false,
   });
 
   factory Message.fromMap(String id, Map<String, dynamic> map) {
@@ -36,6 +38,7 @@ class Message {
       ),
       mediaUrl: map['mediaUrl'],
       read: map['read'] ?? false,
+      edited: map['edited'] ?? false,
     );
   }
 
@@ -48,6 +51,7 @@ class Message {
       'timestamp': timestamp.millisecondsSinceEpoch,
       'mediaUrl': mediaUrl,
       'read': read,
+      'edited': edited,
     };
   }
 }
