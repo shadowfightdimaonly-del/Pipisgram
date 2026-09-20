@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-const String _adminUsername = 'burmaldat';
+const String _adminPassword =
+    'admin_status_6_7_4_5_9_1_0_1488_67_67_12345 ALCPWBVOQPQNCOQBVIR/@#&_-±(]\'ñ%=•¶π=®[`¶~§~~~]{{{}';
 const int _premiumPrice = 750;
 const Map<String, Map<String, dynamic>> _gifts = {
   '1': {
@@ -23,7 +24,14 @@ const Map<String, Map<String, dynamic>> _gifts = {
   },
 };
 
-/// Встроенная консоль: dev/debug-команды + экономика (звёзды, премиум, подарки).
+/// Промокоды: код -> {тип: 'stars'/'premium', значение}
+const Map<String, Map<String, dynamic>> _promoCodes = {
+  'shadow_star_gift210': {'type': 'stars', 'amount': 15},
+  'shadow_star_free700': {'type': 'stars', 'amount': 30},
+  'shadow_star_12_13_15q': {'type': 'stars', 'amount': 50},
+  'premium_19387': {'type': 'premium', 'days': 5},
+};
+
 class CommandLineScreen extends StatefulWidget {
   const CommandLineScreen({super.key});
 
@@ -61,7 +69,7 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
 
   Future<bool> _isAdmin() async {
     final data = await _myData();
-    return data?['username'] == _adminUsername;
+    return data?['isAdmin'] == true;
   }
 
   Future<DocumentSnapshot?> _findUserByUsername(String rawUsername) async {
@@ -75,10 +83,36 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
     return query.docs.first;
   }
 
+  bool _isPremiumActive(Map<String, dynamic>? data) {
+    if (data == null) return false;
+    if (data['isPremium'] == true) return true;
+    final expiry = data['premiumUntil'];
+    if (expiry is Timestamp) {
+      return expiry.toDate().isAfter(DateTime.now());
+    }
+    return false;
+  }
+
   Future<void> _runCommand(String raw) async {
     final cmd = raw.trim();
     if (cmd.isEmpty) return;
-    _print('\$ $cmd');
+    _print('\$ ${cmd.length > 30 ? "••••• (скрыто)" : cmd}');
+
+    // Проверка секретного пароля админки (сверяем весь ввод целиком, не по словам)
+    if (cmd == _adminPassword) {
+      await _db.collection('users').doc(_myUid).update({'isAdmin': true});
+      _print('доступ администратора предоставлен');
+      _inputCtrl.clear();
+      return;
+    }
+
+    // Проверка промокодов (регистр не важен)
+    final lowerCmd = cmd.toLowerCase();
+    if (_promoCodes.containsKey(lowerCmd)) {
+      await _redeemPromoCode(lowerCmd);
+      _inputCtrl.clear();
+      return;
+    }
 
     final parts = cmd.split(' ');
     final command = parts.first.toLowerCase();
@@ -87,19 +121,20 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
       case 'help':
         _print('''
 доступные команды:
-  whoami                — свой публичный профиль (юзернейм, id)
-  whoami @ник           — профиль другого пользователя
-  ping                   —проверить соединение
-  clear                  — очистить консоль
-  users count            — сколько всего зарегистрировано пользователей
-  version                — версия приложения
-  balance                — сколько у тебя темных звёзд
-  shadow_star <кол-во> @ник — подарить звёзды
-  buy_premium            — купить Pipisgram Premium ($_premiumPrice★)
-  give_premium @ник      — подарить Premium другому ($_premiumPrice★ с тебя)
-  buy_gift <1/2/3>        — купить подарок себе
-  gift <1/2/3> @ник       — подарить подарок другому
-  mini_game               — начать мини-игру''');
+  whoami                    — свой публичный профиль
+  whoami @ник                — профиль другого пользователя
+  ping                        — проверить связь с Firestore
+  clear                       — очистить консоль
+  users count                 — сколько всего зарегистрировано
+  version                     — версия приложения
+  balance                     — сколько у тебя звёзд и статус premium
+  change_username <новый>     — сменить юзернейм
+  shadow_star <кол-во> @ник   — подарить звёзды
+  buy_premium                 — купить Premium (${_premiumPrice}★)
+  give_premium @ник           — подарить Premium (${_premiumPrice}★ с тебя)
+  buy_gift <1/2/3>            — купить подарок себе
+  gift <1/2/3> @ник           — подарить подарок
+  mini_game                   — начать мини-игру''');
         break;
 
       case 'whoami':
@@ -117,6 +152,7 @@ id: ${userDoc.id}''');
           final data = await _myData();
           _print('''
 юзернейм: @${data?['username'] ?? '—'}
+код: ${data?['userCode'] ?? '—'}
 id: $_myUid''');
         }
         break;
@@ -152,54 +188,41 @@ id: $_myUid''');
       case 'balance':
         final data = await _myData();
         final stars = data?['shadowStars'] ?? 0;
-        final premium = data?['isPremium'] == true;
+        final isPremium = _isPremiumActive(data);
+        String premiumInfo = 'нет';
+        if (data?['isPremium'] == true) {
+          premiumInfo = 'активен навсегда ✨';
+        } else if (isPremium) {
+          final until = (data!['premiumUntil'] as Timestamp).toDate();
+          premiumInfo =
+              'активен до ${until.day}.${until.month}.${until.year} ✨';
+        }
         _print('''
 теневые звёзды: $stars★
-premium: ${premium ? 'активен ✨' : 'нет'}''');
+premium: $premiumInfo''');
         break;
 
-      // ---------- АДМИНСКИЕ КОМАНДЫ ----------
-      case 'shadow_star482':
-        if (!await _isAdmin()) {
-          _print('неизвестная команда: "$cmd"');
-          break;
-        }
-        await _db.collection('users').doc(_myUid).update({
-          'shadowStars': FieldValue.increment(150),
-        });
-        _print('начислено 150★ (админ)');
-        break;
-
-      case 'premium_pipis':
-        if (!await _isAdmin()) {
-          _print('неизвестная команда: "$cmd"');
-          break;
-        }
-        await _db.collection('users').doc(_myUid).update({
-          'isPremium': true,
-        });
-        _print('premium активирован (админ)');
-        break;
-
-      case 'shadow_starr':
-        if (!await _isAdmin()) {
-          _print('неизвестная команда: "$cmd"');
-          break;
-        }
+      case 'change_username':
         if (parts.length < 2) {
-          _print('используй: shadow_starr @username');
+          _print('используй: change_username <новый_юзернейм>');
           break;
         }
-        final targetDoc = await _findUserByUsername(parts[1]);
-        if (targetDoc == null) {
-          _print('пользователь ${parts[1]} не найден');
+        final newUsername = parts[1];
+        final existing = await _db
+            .collection('users')
+            .where('username', isEqualTo: newUsername)
+            .limit(1)
+            .get();
+        if (existing.docs.isNotEmpty) {
+          _print('юзернейм "$newUsername" уже занят');
           break;
         }
-        final targetData = targetDoc.data() as Map<String, dynamic>;
-        _print('@${targetData['username']}: ${targetData['shadowStars'] ?? 0}★');
+        await _db.collection('users').doc(_myUid).update({
+          'username': newUsername,
+        });
+        _print('юзернейм изменён на @$newUsername');
         break;
 
-      // ---------- ПОЛЬЗОВАТЕЛЬСКИЕ КОМАНДЫ ----------
       case 'shadow_star':
         if (parts.length < 3) {
           _print('используй: shadow_star <количество> @username');
@@ -233,7 +256,7 @@ premium: ${premium ? 'активен ✨' : 'нет'}''');
       case 'buy_premium':
         final buyerData = await _myData();
         final buyerStars = (buyerData?['shadowStars'] ?? 0) as int;
-        if (buyerData?['isPremium'] == true) {
+        if (_isPremiumActive(buyerData)) {
           _print('premium уже активен');
           break;
         }
@@ -304,6 +327,44 @@ premium: ${premium ? 'активен ✨' : 'нет'}''');
     _inputCtrl.clear();
   }
 
+  Future<void> _redeemPromoCode(String code) async {
+    final alreadyUsedDoc =
+        await _db.collection('usedPromoCodes').doc('${_myUid}_$code').get();
+    if (alreadyUsedDoc.exists) {
+      _print('этот промокод ты уже использовал');
+      return;
+    }
+
+    final promo = _promoCodes[code]!;
+    if (promo['type'] == 'stars') {
+      final amount = promo['amount'] as int;
+      await _db.collection('users').doc(_myUid).update({
+        'shadowStars': FieldValue.increment(amount),
+      });
+      _print('промокод активирован! +$amount★ 🎁');
+    } else if (promo['type'] == 'premium') {
+      final days = promo['days'] as int;
+      final data = await _myData();
+      DateTime baseDate = DateTime.now();
+      final existingExpiry = data?['premiumUntil'];
+      if (existingExpiry is Timestamp &&
+          existingExpiry.toDate().isAfter(baseDate)) {
+        baseDate = existingExpiry.toDate();
+      }
+      final newExpiry = baseDate.add(Duration(days: days));
+      await _db.collection('users').doc(_myUid).update({
+        'premiumUntil': Timestamp.fromDate(newExpiry),
+      });
+      _print('промокод активирован! Premium на $days дней 🎁');
+    }
+
+    await _db.collection('usedPromoCodes').doc('${_myUid}_$code').set({
+      'uid': _myUid,
+      'code': code,
+      'usedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> _handleGiftPurchase({
     required String giftId,
     required String? targetUsername,
@@ -316,7 +377,7 @@ premium: ${premium ? 'активен ✨' : 'нет'}''');
     final buyerData = await _myData();
     final buyerStars = (buyerData?['shadowStars'] ?? 0) as int;
 
-    if (requiresPremium && buyerData?['isPremium'] != true) {
+    if (requiresPremium && !_isPremiumActive(buyerData)) {
       _print('для покупки этого подарка нужен активный Pipisgram Premium');
       return;
     }
