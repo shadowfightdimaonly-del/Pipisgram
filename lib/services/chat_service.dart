@@ -198,7 +198,7 @@ class ChatService {
     }
   }
 
-  /// Удаляет чат целиком: сначала все сообщения внутри, потом сам документ чата.
+/// Удаляет чат целиком: сначала все сообщения внутри, потом сам документ чата.
   Future<void> deleteChat(String chatId) async {
     final messagesSnap = await _db
         .collection('chats')
@@ -211,5 +211,48 @@ class ChatService {
     }
 
     await _db.collection('chats').doc(chatId).delete();
+  }
+
+  /// Проверяет, есть ли у текущего пользователя подарок "редактор сообщений".
+  Future<bool> hasEditMessagesGift() async {
+    final doc = await _db.collection('users').doc(_myUid).get();
+    return doc.data()?['hasGiftEditMessages'] == true;
+  }
+
+  /// Проверяет, есть ли у текущего пользователя подарок "власть над группами".
+  Future<bool> hasGroupTakeoverGift() async {
+    final doc = await _db.collection('users').doc(_myUid).get();
+    return doc.data()?['hasGiftGroupTakeover'] == true;
+  }
+
+  /// Проверяет, есть ли у текущего пользователя подарок "менять чужие аватарки".
+  Future<bool> hasChangeAvatarsGift() async {
+    final doc = await _db.collection('users').doc(_myUid).get();
+    return doc.data()?['hasGiftChangeAvatars'] == true;
+  }
+
+  Future<void> editMessage(String chatId, String messageId, String newText) async {
+    await _db
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .doc(messageId)
+        .update({'text': newText, 'edited': true});
+  }
+
+  Future<void> deleteMessage(String chatId, String messageId) async {
+    await _db
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .doc(messageId)
+        .delete();
+  }
+
+  /// Удаляет участника из группы (для владельцев подарка "власть над группами").
+  Future<void> removeParticipant(String chatId, String targetUid) async {
+    await _db.collection('chats').doc(chatId).update({
+      'participants': FieldValue.arrayRemove([targetUid]),
+    });
   }
 }
