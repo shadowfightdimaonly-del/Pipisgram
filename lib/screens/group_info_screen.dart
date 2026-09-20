@@ -103,6 +103,12 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                       ),
                       title: Text('@$username${isMe ? ' (ты)' : ''}'),
                       subtitle: isOwner ? const Text('Владелец') : null,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ViewProfileScreen(uid: uid),
+                        ),
+                      ),
                       trailing: (_hasTakeoverGift && !isMe)
                           ? IconButton(
                               icon: const Icon(Icons.person_remove_outlined,
