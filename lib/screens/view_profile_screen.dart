@@ -74,6 +74,26 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
           final isPremium = data?['isPremium'] == true;
           final profileColor = Color(data?['profileColor'] ?? 0xFF2AABEE);
 
+          final showGifts = data?['showGifts'] == true;
+          final showTakeover = data?['showTakeoverGift'] == true;
+          final hasEditGift = data?['hasGiftEditMessages'] == true;
+          final hasAvatarGift = data?['hasGiftChangeAvatars'] == true;
+          final hasTakeoverGift = data?['hasGiftGroupTakeover'] == true;
+
+          final visibleGifts = <Widget>[];
+          if (showGifts && hasEditGift) {
+            visibleGifts.add(_giftChip(
+                Icons.edit_outlined, 'Редактор сообщений', Colors.blue));
+          }
+          if (showGifts && hasAvatarGift) {
+            visibleGifts.add(_giftChip(
+                Icons.image_outlined, 'Меняет чужие аватарки', Colors.green));
+          }
+          if (showTakeover && hasTakeoverGift) {
+            visibleGifts.add(_giftChip(Icons.warning_amber_rounded,
+                'Власть над группами', Colors.deepOrange));
+          }
+
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -138,6 +158,15 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                   ],
                 ),
               ),
+              if (visibleGifts.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: visibleGifts,
+                ),
+              ],
               if (_hasChangeAvatarGift)
                 const Padding(
                   padding: EdgeInsets.only(top: 16),
@@ -151,6 +180,15 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _giftChip(IconData icon, String label, Color color) {
+    return Chip(
+      avatar: Icon(icon, size: 16, color: color),
+      label: Text(label, style: const TextStyle(fontSize: 12)),
+      backgroundColor: color.withOpacity(0.1),
+      side: BorderSide(color: color.withOpacity(0.3)),
     );
   }
 }
