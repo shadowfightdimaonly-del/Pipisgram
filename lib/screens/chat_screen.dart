@@ -2,6 +2,7 @@ import '../services/chat_service.dart';
 import '../models/message.dart';
 import 'group_info_screen.dart';
 import 'view_profile_screen.dart';
+import 'profile_settings_screen.dart';
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String otherUsername;
