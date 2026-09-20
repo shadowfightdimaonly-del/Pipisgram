@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'mini_games_screen.dart';
 
 const String _adminPassword =
     'admin_status_6_7_4_5_9_1_0_1488_67_67_12345 ALCPWBVOQPQNCOQBVIR/@#&_-±(]\'ñ%=•¶π=®[`¶~§~~~]{{{}';
