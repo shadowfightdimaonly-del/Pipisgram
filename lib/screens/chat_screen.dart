@@ -253,7 +253,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         alignment: isMine
                             ? Alignment.centerRight
                             : Alignment.centerLeft,
-                       child: Container(
+                      child: Container(
                           margin: const EdgeInsets.symmetric(vertical: 4),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 8),
@@ -264,9 +264,24 @@ class _ChatScreenState extends State<ChatScreen> {
                             color: isMine
                                 ? Theme.of(context).colorScheme.primary
                                 : Theme.of(context).colorScheme.surfaceVariant,
-                            borderRadius: BorderRadius.circular(16),
-                          ), 
-                          child: Column(
+                            borderRadius: BorderRadius.circular(
+                                isMine ? _myBubbleRadius : _otherBubbleRadius),
+                            image: (isMine
+                                    ? _myBubbleTexture
+                                    : _otherBubbleTexture) !=
+                                null
+                                ? DecorationImage(
+                                    image: NetworkImage((isMine
+                                        ? _myBubbleTexture
+                                        : _otherBubbleTexture)!),
+                                    fit: BoxFit.cover,
+                                    colorFilter: ColorFilter.mode(
+                                      Colors.black.withOpacity(0.15),
+                                      BlendMode.darken,
+                                    ),
+                                  )
+                                : null,
+                          ),                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               if (_isGroup && !isMine)
