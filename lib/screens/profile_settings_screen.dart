@@ -26,6 +26,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   bool _loading = true;
   bool _uploadingAvatar = false;
   bool _uploadingBackground = false;
+  bool _uploadingBubble = false;
   bool _showOnlineStatus = true;
   bool _showGifts = false;
   bool _showTakeoverGift = false;
