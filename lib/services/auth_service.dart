@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
@@ -7,6 +8,19 @@ class AuthService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   User? get currentUser => _auth.currentUser;
+
+  Future<String> _generateUniqueCode() async {
+    final rnd = Random();
+    while (true) {
+      final code = (10000 + rnd.nextInt(90000)).toString(); // 5 цифр
+      final existing = await _db
+          .collection('users')
+          .where('userCode', isEqualTo: code)
+          .limit(1)
+          .get();
+      if (existing.docs.isEmpty) return code;
+    }
+  }
 
   Future<String?> register(String email, String password, String username) async {
     final existing = await _db
@@ -24,8 +38,11 @@ class AuthService {
         email: email,
         password: password,
       );
+      final userCode = await _generateUniqueCode();
+
       await _db.collection('users').doc(cred.user!.uid).set({
         'username': username,
+        'userCode': userCode,
         'email': email,
         'online': true,
         'createdAt': FieldValue.serverTimestamp(),
@@ -53,6 +70,15 @@ class AuthService {
 
       await OneSignal.login(_auth.currentUser!.uid);
 
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return _mapError(e.code);
+    }
+  }
+
+  Future<String?> resetPassword(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
       return null;
     } on FirebaseAuthException catch (e) {
       return _mapError(e.code);
