@@ -16,19 +16,19 @@ class _NewChatScreenState extends State<NewChatScreen> {
   String? _error;
 
   Future<void> _startChat() async {
-    final username = _ctrl.text.trim();
-    if (username.isEmpty) return;
+    final code = _ctrl.text.trim();
+    if (code.isEmpty) return;
 
     setState(() {
       _loading = true;
       _error = null;
     });
 
-    final user = await _chatService.findUserByUsername(username);
+    final user = await _chatService.findUserByCode(code);
     if (user == null) {
       setState(() {
         _loading = false;
-        _error = 'друн не найден';
+        _error = 'Пользователь с таким кодом не найден';
       });
       return;
     }
@@ -58,9 +58,10 @@ class _NewChatScreenState extends State<NewChatScreen> {
           children: [
             TextField(
               controller: _ctrl,
+              keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: '@юзернейм друга',
-                hintText: 'например, @burmaldatik',
+                labelText: 'Код друга (5 цифр)',
+                hintText: 'например, 71957',
                 border: const OutlineInputBorder(),
                 errorText: _error,
               ),
