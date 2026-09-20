@@ -10,7 +10,6 @@ class MiniGamesService {
     return '${now.year}-${now.month}-${now.day}';
   }
 
-  /// Возвращает документ статистики игрока за сегодня (создаёт, если нет)
   Future<Map<String, dynamic>> _getTodayStats(String gameId) async {
     final docId = '${_myUid}_${gameId}_$_today';
     final doc = await _db.collection('gameStats').doc(docId).get();
@@ -22,7 +21,6 @@ class MiniGamesService {
     await _db.collection('gameStats').doc(docId).set(data, SetOptions(merge: true));
   }
 
-  /// Кликер: возвращает (текущие тапы сегодня, лимит достигнут?)
   Future<int> getClickerTapsToday() async {
     final stats = await _getTodayStats('clicker');
     return stats['taps'] ?? 0;
@@ -44,16 +42,18 @@ class MiniGamesService {
     });
   }
 
-  /// Угадайка: сколько попыток осталось сегодня (из 3)
   Future<int> getGuessAttemptsLeft() async {
     final stats = await _getTodayStats('guess');
-    final used = stats['attempts'] ?? 0;
-    return (3 - used).clamp(0, 3);
+    final used = (stats['attempts'] ?? 0) as int;
+    final left = 3 - used;
+    if (left < 0) return 0;
+    if (left > 3) return 3;
+    return left;
   }
 
   Future<bool> useGuessAttempt() async {
     final stats = await _getTodayStats('guess');
-    final used = stats['attempts'] ?? 0;
+    final used = (stats['attempts'] ?? 0) as int;
     if (used >= 3) return false;
     await _saveTodayStats('guess', {'attempts': used + 1});
     return true;
@@ -65,7 +65,6 @@ class MiniGamesService {
     });
   }
 
-  /// Динозаврик: без дневного лимита, просто начисляем звёзды за сессию
   Future<void> cashOutDinoStars(int jumps) async {
     final wholeStars = (jumps * 0.5).floor();
     if (wholeStars <= 0) return;
