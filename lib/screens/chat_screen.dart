@@ -1,8 +1,13 @@
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import '../services/chat_service.dart';
 import '../models/message.dart';
 import 'group_info_screen.dart';
 import 'view_profile_screen.dart';
 import 'profile_settings_screen.dart';
+
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String otherUsername;
@@ -29,13 +34,30 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _myBubbleTexture;
   double _otherBubbleRadius = 16.0;
   String? _otherBubbleTexture;
-  @override
+
   @override
   void initState() {
     super.initState();
     _checkIfGroup();
     _checkEditRights();
     _loadBubbleStyles();
+  }
+
+  Future<void> _checkIfGroup() async {
+    final doc = await FirebaseFirestore.instance
+        .collection('chats')
+        .doc(widget.chatId)
+        .get();
+    if (mounted) {
+      setState(() => _isGroup = doc.data()?['isGroup'] == true);
+    }
+  }
+
+  Future<void> _checkEditRights() async {
+    final hasGift = await _chatService.hasEditMessagesGift();
+    if (mounted) {
+      setState(() => _canEditOthersMessages = hasGift);
+    }
   }
 
   Future<void> _loadBubbleStyles() async {
@@ -72,23 +94,6 @@ class _ChatScreenState extends State<ChatScreen> {
         _otherBubbleRadius = otherRadius;
         _otherBubbleTexture = otherTexture;
       });
-    }
-  }
-
-  Future<void> _checkIfGroup() async {
-    final doc = await FirebaseFirestore.instance
-        .collection('chats')
-        .doc(widget.chatId)
-        .get();
-    if (mounted) {
-      setState(() => _isGroup = doc.data()?['isGroup'] == true);
-    }
-  }
-
-  Future<void> _checkEditRights() async {
-    final hasGift = await _chatService.hasEditMessagesGift();
-    if (mounted) {
-      setState(() => _canEditOthersMessages = hasGift);
     }
   }
 
@@ -253,7 +258,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         alignment: isMine
                             ? Alignment.centerRight
                             : Alignment.centerLeft,
-                      child: Container(
+                        child: Container(
                           margin: const EdgeInsets.symmetric(vertical: 4),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 8),
@@ -267,9 +272,9 @@ class _ChatScreenState extends State<ChatScreen> {
                             borderRadius: BorderRadius.circular(
                                 isMine ? _myBubbleRadius : _otherBubbleRadius),
                             image: (isMine
-                                    ? _myBubbleTexture
-                                    : _otherBubbleTexture) !=
-                                null
+                                        ? _myBubbleTexture
+                                        : _otherBubbleTexture) !=
+                                    null
                                 ? DecorationImage(
                                     image: NetworkImage((isMine
                                         ? _myBubbleTexture
@@ -281,7 +286,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                     ),
                                   )
                                 : null,
-                          ),                          child: Column(
+                          ),
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               if (_isGroup && !isMine)
