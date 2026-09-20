@@ -314,11 +314,11 @@ premium: $premiumInfo''');
         break;
 
       case 'mini_game':
-        _print('мини-игры скоро появятся 🎮 пока в разработке');
-        break;
-
-      case 'choice_mini_game':
-        _print('сначала запусти "mini_game"');
+        _print('открываю мини-игры 🎮');
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const MiniGamesScreen()),
+        );
         break;
 
       default:
