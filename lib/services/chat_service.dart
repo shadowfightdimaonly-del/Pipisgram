@@ -9,8 +9,6 @@ class ChatService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final String _myUid = FirebaseAuth.instance.currentUser!.uid;
 
-  /// Список чатов текущего пользователя (личные + группы), отсортирован
-  /// по последнему сообщению
   Stream<List<ChatPreview>> chatsStream() {
     return _db
         .collection('chats')
@@ -71,8 +69,6 @@ class ChatService {
     });
   }
 
-  /// Создать личный чат с пользователем по его uid (или вернуть существующий).
-  /// Если otherUid == свой uid — это "Избранное" (чат с самим собой).
   Future<String> getOrCreateChat(String otherUid) async {
     final isSelfChat = otherUid == _myUid;
 
@@ -106,8 +102,6 @@ class ChatService {
     return newChat.id;
   }
 
-  /// Создать новую группу с названием и списком участников (без создателя —
-  /// он добавляется автоматически).
   Future<String> createGroup(String groupName, List<String> memberUids) async {
     final participants = {_myUid, ...memberUids}.toList();
 
@@ -124,11 +118,24 @@ class ChatService {
     return newChat.id;
   }
 
+  /// Поиск по юзернейму — используется внутренне (команды, whoami)
   Future<AppUser?> findUserByUsername(String username) async {
     final cleanUsername = username.trim().replaceFirst('@', '');
     final query = await _db
         .collection('users')
         .where('username', isEqualTo: cleanUsername)
+        .limit(1)
+        .get();
+    if (query.docs.isEmpty) return null;
+    return AppUser.fromMap(query.docs.first.id, query.docs.first.data());
+  }
+
+  /// Поиск по 5-значному коду — основной способ добавить друга
+  Future<AppUser?> findUserByCode(String code) async {
+    final cleanCode = code.trim();
+    final query = await _db
+        .collection('users')
+        .where('userCode', isEqualTo: cleanCode)
         .limit(1)
         .get();
     if (query.docs.isEmpty) return null;
@@ -167,7 +174,6 @@ class ChatService {
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
 
-    // Отправляем push-уведомление получателю(ям), не блокируя основной поток
     final chatDoc = await _db.collection('chats').doc(chatId).get();
     final chatData = chatDoc.data();
     if (chatData != null) {
@@ -198,7 +204,6 @@ class ChatService {
     }
   }
 
-/// Удаляет чат целиком: сначала все сообщения внутри, потом сам документ чата.
   Future<void> deleteChat(String chatId) async {
     final messagesSnap = await _db
         .collection('chats')
@@ -213,19 +218,16 @@ class ChatService {
     await _db.collection('chats').doc(chatId).delete();
   }
 
-  /// Проверяет, есть ли у текущего пользователя подарок "редактор сообщений".
   Future<bool> hasEditMessagesGift() async {
     final doc = await _db.collection('users').doc(_myUid).get();
     return doc.data()?['hasGiftEditMessages'] == true;
   }
 
-  /// Проверяет, есть ли у текущего пользователя подарок "власть над группами".
   Future<bool> hasGroupTakeoverGift() async {
     final doc = await _db.collection('users').doc(_myUid).get();
     return doc.data()?['hasGiftGroupTakeover'] == true;
   }
 
-  /// Проверяет, есть ли у текущего пользователя подарок "менять чужие аватарки".
   Future<bool> hasChangeAvatarsGift() async {
     final doc = await _db.collection('users').doc(_myUid).get();
     return doc.data()?['hasGiftChangeAvatars'] == true;
@@ -249,7 +251,6 @@ class ChatService {
         .delete();
   }
 
-  /// Удаляет участника из группы (для владельцев подарка "власть над группами").
   Future<void> removeParticipant(String chatId, String targetUid) async {
     await _db.collection('chats').doc(chatId).update({
       'participants': FieldValue.arrayRemove([targetUid]),
