@@ -2,8 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Простая встроенная консоль: полезные dev/debug-команды прямо в приложении,
-/// без необходимости лезть в adb logcat. Список команд легко расширять.
+const String _adminUsername = 'burmaldat';
+const int _premiumPrice = 750;
+const Map<String, Map<String, dynamic>> _gifts = {
+  '1': {
+    'name': 'Право редактора сообщений',
+    'price': 120,
+    'field': 'hasGiftEditMessages',
+  },
+  '2': {
+    'name': 'Право менять чужие аватарки',
+    'price': 215,
+    'field': 'hasGiftChangeAvatars',
+  },
+  '3': {
+    'name': 'Власть над группами',
+    'price': 570,
+    'field': 'hasGiftGroupTakeover',
+    'requiresPremium': true,
+  },
+};
+
+/// Встроенная консоль: dev/debug-команды + экономика (звёзды, премиум, подарки).
 class CommandLineScreen extends StatefulWidget {
   const CommandLineScreen({super.key});
 
@@ -13,6 +33,9 @@ class CommandLineScreen extends StatefulWidget {
 
 class _CommandLineScreenState extends State<CommandLineScreen> {
   final _inputCtrl = TextEditingController();
+  final _db = FirebaseFirestore.instance;
+  final _myUid = FirebaseAuth.instance.currentUser!.uid;
+
   final List<String> _log = [
     '> система готова. напиши "help" для списка команд',
   ];
@@ -31,94 +54,70 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
     });
   }
 
+  Future<Map<String, dynamic>?> _myData() async {
+    final doc = await _db.collection('users').doc(_myUid).get();
+    return doc.data();
+  }
+
+  Future<bool> _isAdmin() async {
+    final data = await _myData();
+    return data?['username'] == _adminUsername;
+  }
+
+  Future<DocumentSnapshot?> _findUserByUsername(String rawUsername) async {
+    final username = rawUsername.replaceFirst('@', '').trim();
+    final query = await _db
+        .collection('users')
+        .where('username', isEqualTo: username)
+        .limit(1)
+        .get();
+    if (query.docs.isEmpty) return null;
+    return query.docs.first;
+  }
+
   Future<void> _runCommand(String raw) async {
     final cmd = raw.trim();
     if (cmd.isEmpty) return;
     _print('\$ $cmd');
 
     final parts = cmd.split(' ');
-    final mainCommand = parts.first.toLowerCase();
+    final command = parts.first.toLowerCase();
 
-    // ⚡ ПАСХАЛКА: Обработка твоих секретных кодов интерфейса прямо в терминале!
-    if (mainCommand == 'sonne') {
-      _print('🪐 HIER KOMMT DIE SONNE... Скин Сириуса активирован в кэше!');
-      _inputCtrl.clear();
-      return;
-    } else if (mainCommand == 'bad' && parts.length > 1 && parts[1].toLowerCase() == 'time') {
-      _print('💀 Вы собираетесь хорошо провести время. Скин Санса готов!');
-      _inputCtrl.clear();
-      return;
-    } else if (mainCommand == 'murder!') {
-      _print('🔮 MURDER! В воздухе пахнет фиолетовой пылью...');
-      _inputCtrl.clear();
-      return;
-    }
-
-    switch (mainCommand) {
+    switch (command) {
       case 'help':
         _print('''
 доступные команды:
-  whoami          — информация о себе
-  whoami @username— найти профиль пользователя
-  ping            —проверитьс пинг
-  clear           — очистить консоль
-  users count     — сколько всего зарегистрировано пользователей
-  version         — версия приложения''');
+  whoami                — свой публичный профиль (юзернейм, id)
+  whoami @ник           — профиль другого пользователя
+  ping                   —проверить соединение
+  clear                  — очистить консоль
+  users count            — сколько всего зарегистрировано пользователей
+  version                — версия приложения
+  balance                — сколько у тебя темных звёзд
+  shadow_star <кол-во> @ник — подарить звёзды
+  buy_premium            — купить Pipisgram Premium ($_premiumPrice★)
+  give_premium @ник      — подарить Premium другому ($_premiumPrice★ с тебя)
+  buy_gift <1/2/3>        — купить подарок себе
+  gift <1/2/3> @ник       — подарить подарок другому
+  mini_game               — начать мини-игру''');
         break;
 
       case 'whoami':
-        final u = FirebaseAuth.instance.currentUser;
-        if (u == null) {
-          _print('ошибка: вы не авторизованы.');
-          break;
-        }
-
-        // Если ввели просто "whoami" — показываем инфу о самом себе из Firestore
-        if (parts.length == 1) {
-          try {
-            final doc = await FirebaseFirestore.instance.collection('users').doc(u.uid).get();
-            final name = doc.data()?['username'] ?? 'Без имени';
-            final hasPremium = doc.data()?['hasPremium'] ?? false;
-            
-            _print('-----------------------------------------');
-            _print('ℹ️ ТВОЙ СЕКРЕТНЫЙ ПРОФИЛЬ PIPISGRAM:');
-            _print('👤 Имя в базе: $name');
-            _print('🆔 Твой цифровой ID: ${u.uid.substring(0, 8)}... (Защищено)');
-            _print('👑 Премиум статус: ${hasPremium ? "АКТИВЕН 🐾" : "Обычный юзер"}');
-            _print;
-            _print('-----------------------------------------');
-          } catch (e) {
-            // Если документ еще не создан, выдаем базовый UID
-            _print('uid: ${u.uid}\n🔒 Email скрыт из вывода.');
+        if (parts.length > 1) {
+          final userDoc = await _findUserByUsername(parts[1]);
+          if (userDoc == null) {
+            _print('пользователь ${parts[1]} не найден');
+          } else {
+            final data = userDoc.data() as Map<String, dynamic>;
+            _print('''
+юзернейм: @${data['username']}
+id: ${userDoc.id}''');
           }
-        } 
-        // Если ввели "whoami @username" — найти чужой профиль
-        else {
-          final targetUser = parts[1];
-          try {
-            final snap = await FirebaseFirestore.instance
-                .collection('users')
-                .where('username', isEqualTo: targetUser)
-                .limit(1)
-                .get();
-
-            if (snap.docs.isNotEmpty) {
-              final doc = snap.docs.first;
-              final name = doc.data()['username'] ?? 'Без имени';
-              final hasPremium = doc.data()['hasPremium'] ?? false;
-              
-              _print('-----------------------------------------');
-              _print('🔎 НАЙДЕН ПОЛЬЗОВАТЕЛЬ PIPISGRAM:');
-              _print('👤 Имя профиля: $name');
-              _print('🆔 Системный ID: ${doc.id.substring(0, 8)}...');
-              _print('💎 Имущество: ${hasPremium ? "Pipis Premium 👑" : "Нет"}');
-              _print('-----------------------------------------');
-            } else {
-              _print('пользователь с юзернеймом $targetUser не найден.');
-            }
-          } catch (e) {
-            _print('ошибка поиска: $e');
-          }
+        } else {
+          final data = await _myData();
+          _print('''
+юзернейм: @${data?['username'] ?? '—'}
+id: $_myUid''');
         }
         break;
 
@@ -127,15 +126,15 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
         break;
 
       case 'version':
-        _print('pipisgram v1.1.0 (Safe Version)');
+        _print('chatapp v1.0.0+1 (MVP)');
         break;
 
       case 'ping':
         final sw = Stopwatch()..start();
         try {
-          await FirebaseFirestore.instance.collection('users').limit(1).get();
+          await _db.collection('users').limit(1).get();
           sw.stop();
-          _print('pong — ${sw.elapsedMilliseconds}ms (Firebase напрямую)');
+          _print('pong — ${sw.elapsedMilliseconds}ms');
         } catch (e) {
           _print('ошибка соединения: $e');
         }
@@ -143,12 +142,159 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
 
       case 'users':
         if (parts.length > 1 && parts[1] == 'count') {
-          final snap =
-              await FirebaseFirestore.instance.collection('users').count().get();
+          final snap = await _db.collection('users').count().get();
           _print('пользователей в базе: ${snap.count}');
         } else {
           _print('неизвестная подкоманда. попробуй: users count');
         }
+        break;
+
+      case 'balance':
+        final data = await _myData();
+        final stars = data?['shadowStars'] ?? 0;
+        final premium = data?['isPremium'] == true;
+        _print('''
+теневые звёзды: $stars★
+premium: ${premium ? 'активен ✨' : 'нет'}''');
+        break;
+
+      // ---------- АДМИНСКИЕ КОМАНДЫ ----------
+      case 'shadow_star482':
+        if (!await _isAdmin()) {
+          _print('неизвестная команда: "$cmd"');
+          break;
+        }
+        await _db.collection('users').doc(_myUid).update({
+          'shadowStars': FieldValue.increment(150),
+        });
+        _print('начислено 150★ (админ)');
+        break;
+
+      case 'premium_pipis':
+        if (!await _isAdmin()) {
+          _print('неизвестная команда: "$cmd"');
+          break;
+        }
+        await _db.collection('users').doc(_myUid).update({
+          'isPremium': true,
+        });
+        _print('premium активирован (админ)');
+        break;
+
+      case 'shadow_starr':
+        if (!await _isAdmin()) {
+          _print('неизвестная команда: "$cmd"');
+          break;
+        }
+        if (parts.length < 2) {
+          _print('используй: shadow_starr @username');
+          break;
+        }
+        final targetDoc = await _findUserByUsername(parts[1]);
+        if (targetDoc == null) {
+          _print('пользователь ${parts[1]} не найден');
+          break;
+        }
+        final targetData = targetDoc.data() as Map<String, dynamic>;
+        _print('@${targetData['username']}: ${targetData['shadowStars'] ?? 0}★');
+        break;
+
+      // ---------- ПОЛЬЗОВАТЕЛЬСКИЕ КОМАНДЫ ----------
+      case 'shadow_star':
+        if (parts.length < 3) {
+          _print('используй: shadow_star <количество> @username');
+          break;
+        }
+        final amount = int.tryParse(parts[1]);
+        if (amount == null || amount <= 0) {
+          _print('некорректное количество звёзд');
+          break;
+        }
+        final myData = await _myData();
+        final myStars = (myData?['shadowStars'] ?? 0) as int;
+        if (myStars < amount) {
+          _print('недостаточно звёзд (у тебя $myStars★)');
+          break;
+        }
+        final recipientDoc = await _findUserByUsername(parts[2]);
+        if (recipientDoc == null) {
+          _print('пользователь ${parts[2]} не найден');
+          break;
+        }
+        await _db.collection('users').doc(_myUid).update({
+          'shadowStars': FieldValue.increment(-amount),
+        });
+        await _db.collection('users').doc(recipientDoc.id).update({
+          'shadowStars': FieldValue.increment(amount),
+        });
+        _print('подарено $amount★ пользователю ${parts[2]}');
+        break;
+
+      case 'buy_premium':
+        final buyerData = await _myData();
+        final buyerStars = (buyerData?['shadowStars'] ?? 0) as int;
+        if (buyerData?['isPremium'] == true) {
+          _print('premium уже активен');
+          break;
+        }
+        if (buyerStars < _premiumPrice) {
+          _print('недостаточно звёзд (нужно $_premiumPrice★, у тебя $buyerStars★)');
+          break;
+        }
+        await _db.collection('users').doc(_myUid).update({
+          'shadowStars': FieldValue.increment(-_premiumPrice),
+          'isPremium': true,
+        });
+        _print('premium активирован! 🎉');
+        break;
+
+      case 'give_premium':
+        if (parts.length < 2) {
+          _print('используй: give_premium @username');
+          break;
+        }
+        final giverData = await _myData();
+        final giverStars = (giverData?['shadowStars'] ?? 0) as int;
+        if (giverStars < _premiumPrice) {
+          _print('недостаточно звёзд (нужно $_premiumPrice★, у тебя $giverStars★)');
+          break;
+        }
+        final premiumTargetDoc = await _findUserByUsername(parts[1]);
+        if (premiumTargetDoc == null) {
+          _print('пользователь ${parts[1]} не найден');
+          break;
+        }
+        await _db.collection('users').doc(_myUid).update({
+          'shadowStars': FieldValue.increment(-_premiumPrice),
+        });
+        await _db.collection('users').doc(premiumTargetDoc.id).update({
+          'isPremium': true,
+        });
+        _print('подарен premium пользователю ${parts[1]}! 🎉');
+        break;
+
+      case 'buy_gift':
+        if (parts.length < 2 || !_gifts.containsKey(parts[1])) {
+          _print('используй: buy_gift <1/2/3>');
+          break;
+        }
+        await _handleGiftPurchase(giftId: parts[1], targetUsername: null);
+        break;
+
+      case 'gift':
+        if (parts.length < 3 || !_gifts.containsKey(parts[1])) {
+          _print('используй: gift <1/2/3> @username');
+          break;
+        }
+        await _handleGiftPurchase(giftId: parts[1], targetUsername: parts[2]);
+        break;
+
+      case 'mini_game':
+        _print('мини-игры скоро появятся 🎮 пока в разработке');
+        break;
+
+      case 'choice_mini_game':
+        _print('сначала запусти "mini_game"');
         break;
 
       default:
@@ -156,6 +302,49 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
     }
 
     _inputCtrl.clear();
+  }
+
+  Future<void> _handleGiftPurchase({
+    required String giftId,
+    required String? targetUsername,
+  }) async {
+    final gift = _gifts[giftId]!;
+    final price = gift['price'] as int;
+    final field = gift['field'] as String;
+    final requiresPremium = gift['requiresPremium'] == true;
+
+    final buyerData = await _myData();
+    final buyerStars = (buyerData?['shadowStars'] ?? 0) as int;
+
+    if (requiresPremium && buyerData?['isPremium'] != true) {
+      _print('для покупки этого подарка нужен активный Pipisgram Premium');
+      return;
+    }
+    if (buyerStars < price) {
+      _print('недостаточно звёзд (нужно $price★, у тебя $buyerStars★)');
+      return;
+    }
+
+    String targetUid = _myUid;
+    if (targetUsername != null) {
+      final targetDoc = await _findUserByUsername(targetUsername);
+      if (targetDoc == null) {
+        _print('пользователь $targetUsername не найден');
+        return;
+      }
+      targetUid = targetDoc.id;
+    }
+
+    await _db.collection('users').doc(_myUid).update({
+      'shadowStars': FieldValue.increment(-price),
+    });
+    await _db.collection('users').doc(targetUid).update({
+      field: true,
+    });
+
+    _print(targetUsername == null
+        ? '"${gift['name']}" куплен себе за $price★'
+        : '"${gift['name']}" подарен $targetUsername за $price★');
   }
 
   @override
