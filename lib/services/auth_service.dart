@@ -12,7 +12,7 @@ class AuthService {
   Future<String> _generateUniqueCode() async {
     final rnd = Random();
     while (true) {
-      final code = (10000 + rnd.nextInt(90000)).toString(); // 5 цифр
+      final code = (10000 + rnd.nextInt(90000)).toString();
       final existing = await _db
           .collection('users')
           .where('userCode', isEqualTo: code)
@@ -59,13 +59,23 @@ class AuthService {
   Future<String?> login(String email, String password) async {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
-      final userDoc =
-          await _db.collection('users').doc(_auth.currentUser!.uid).get();
-      final showStatus = userDoc.data()?['showOnlineStatus'] ?? true;
+      final userRef = _db.collection('users').doc(_auth.currentUser!.uid);
+      final userDoc = await userRef.get();
+      final data = userDoc.data();
+
+      final showStatus = data?['showOnlineStatus'] ?? true;
+      final updates = <String, dynamic>{};
       if (showStatus) {
-        await _db.collection('users').doc(_auth.currentUser!.uid).update({
-          'online': true,
-        });
+        updates['online'] = true;
+      }
+
+      // Довыдача кода для аккаунтов, созданных до введения этой функции
+      if (data != null && (data['userCode'] == null || data['userCode'] == '')) {
+        updates['userCode'] = await _generateUniqueCode();
+      }
+
+      if (updates.isNotEmpty) {
+        await userRef.update(updates);
       }
 
       await OneSignal.login(_auth.currentUser!.uid);
