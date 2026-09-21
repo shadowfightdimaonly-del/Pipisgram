@@ -16,6 +16,7 @@ class _GuessNumberGameScreenState extends State<GuessNumberGameScreen> {
   bool _guessing = false;
   String? _lastResult;
   int? _selectedNumber;
+  bool? _lastWon;
 
   @override
   void initState() {
@@ -24,11 +25,22 @@ class _GuessNumberGameScreenState extends State<GuessNumberGameScreen> {
   }
 
   Future<void> _loadAttempts() async {
-    final left = await _service.getGuessAttemptsLeft();
-    setState(() {
-      _attemptsLeft = left;
-      _loading = false;
-    });
+    try {
+      final left = await _service.getGuessAttemptsLeft();
+      if (mounted) {
+        setState(() {
+          _attemptsLeft = left;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось загрузить попытки, попробуй ещё раз')),
+        );
+      }
+    }
   }
 
   Future<void> _guess(int number) async {
@@ -37,34 +49,53 @@ class _GuessNumberGameScreenState extends State<GuessNumberGameScreen> {
     setState(() {
       _guessing = true;
       _selectedNumber = number;
+      _lastResult = null;
     });
 
-    final allowed = await _service.useGuessAttempt();
-    if (!allowed) {
-      setState(() {
-        _guessing = false;
-        _attemptsLeft = 0;
-      });
-      return;
+    try {
+      final allowed = await _service.useGuessAttempt();
+      if (!allowed) {
+        if (mounted) {
+          setState(() {
+            _guessing = false;
+            _attemptsLeft = 0;
+            _selectedNumber = null;
+          });
+        }
+        return;
+      }
+
+      final secretNumber = Random().nextInt(15) + 1;
+      final won = number == secretNumber;
+
+      if (won) {
+        await _service.rewardGuessWin();
+      }
+
+      final newAttemptsLeft = await _service.getGuessAttemptsLeft();
+
+      if (mounted) {
+        setState(() {
+          _guessing = false;
+          _attemptsLeft = newAttemptsLeft;
+          _lastWon = won;
+          _lastResult = won
+              ? 'Угадал! Загаданное число было $secretNumber. +1★'
+              : 'Не угадал. Загаданное число было $secretNumber';
+          _selectedNumber = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _guessing = false;
+          _selectedNumber = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ошибка соединения, попытка не потрачена')),
+        );
+      }
     }
-
-    final secretNumber = Random().nextInt(15) + 1;
-    final won = number == secretNumber;
-
-    if (won) {
-      await _service.rewardGuessWin();
-    }
-
-    final newAttemptsLeft = await _service.getGuessAttemptsLeft();
-
-    setState(() {
-      _guessing = false;
-      _attemptsLeft = newAttemptsLeft;
-      _lastResult = won
-          ? 'Угадал! Загаданное число было $secretNumber. +1★'
-          : 'Не угадал. Загаданное число было $secretNumber';
-      _selectedNumber = null;
-    });
   }
 
   @override
@@ -102,7 +133,7 @@ class _GuessNumberGameScreenState extends State<GuessNumberGameScreen> {
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: isDisabled
+                            color: isDisabled && !isSelected
                                 ? Colors.grey.shade300
                                 : (isSelected
                                     ? Theme.of(context).colorScheme.primary
@@ -115,7 +146,7 @@ class _GuessNumberGameScreenState extends State<GuessNumberGameScreen> {
                                   width: 16,
                                   height: 16,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2),
+                                      strokeWidth: 2, color: Colors.white),
                                 )
                               : Text('$number',
                                   style: TextStyle(
@@ -128,12 +159,35 @@ class _GuessNumberGameScreenState extends State<GuessNumberGameScreen> {
                   ),
                   const SizedBox(height: 24),
                   if (_lastResult != null)
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Text(
-                        _lastResult!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: (_lastWon == true ? Colors.green : Colors.orange)
+                            .withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _lastWon == true ? Colors.green : Colors.orange,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _lastWon == true
+                                ? Icons.celebration
+                                : Icons.info_outline,
+                            color: _lastWon == true ? Colors.green : Colors.orange,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              _lastResult!,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   if (_attemptsLeft <= 0)
