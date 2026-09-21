@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 
+import 'services/auth_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/chat_list_screen.dart';
 
@@ -43,7 +44,10 @@ class ChatApp extends StatelessWidget {
             );
           }
           if (snapshot.hasData) {
-            return const ChatListScreen();
+            return FutureBuilder(
+              future: AuthService().ensureUserCode(),
+              builder: (context, _) => const ChatListScreen(),
+            );
           }
           return const LoginScreen();
         },
