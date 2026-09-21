@@ -106,6 +106,18 @@ class AuthService {
     await _auth.signOut();
   }
 
+/// Проверяет и довыдаёт userCode при каждом открытии приложения —
+  /// на случай если аккаунт создан до введения этой функции.
+  Future<void> ensureUserCode() async {
+    if (currentUser == null) return;
+    final userRef = _db.collection('users').doc(currentUser!.uid);
+    final doc = await userRef.get();
+    final data = doc.data();
+    if (data != null && (data['userCode'] == null || data['userCode'] == '')) {
+      await userRef.update({'userCode': await _generateUniqueCode()});
+    }
+  }
+
   String _mapError(String code) {
     switch (code) {
       case 'email-already-in-use':
