@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'mini_games_screen.dart';
+import '../services/push_notification_service.dart';
 
 const String _adminPassword =
     'admin_status_6_7_4_5_9_1_0_1488_67_67_12345 ALCPWBVOQPQNCOQBVIR/@#&_-±(]\'ñ%=•¶π=®[`¶~§~~~]{{{}';
@@ -25,7 +26,6 @@ const Map<String, Map<String, dynamic>> _gifts = {
   },
 };
 
-/// Промокоды: код -> {тип: 'stars'/'premium', значение}
 const Map<String, Map<String, dynamic>> _promoCodes = {
   'shadow_star_gift210': {'type': 'stars', 'amount': 15},
   'shadow_star_free700': {'type': 'stars', 'amount': 30},
@@ -99,8 +99,6 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
     if (cmd.isEmpty) return;
     _print('\$ ${cmd.length > 30 ? "••••• (скрыто)" : cmd}');
 
-   // Проверка секретного пароля админки — нормализуем "умные" кавычки/тире,
-    // которые телефонная клавиатура иногда подставляет вместо обычных
     final normalizedCmd = cmd
         .replaceAll(''', "'")
         .replaceAll(''', "'")
@@ -115,7 +113,6 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
       return;
     }
 
-    // Проверка промокодов (регистр не важен)
     final lowerCmd = cmd.toLowerCase();
     if (_promoCodes.containsKey(lowerCmd)) {
       await _redeemPromoCode(lowerCmd);
@@ -259,6 +256,12 @@ premium: $premiumInfo''');
         await _db.collection('users').doc(recipientDoc.id).update({
           'shadowStars': FieldValue.increment(amount),
         });
+        final myUsernameForGift = myData?['username'] ?? 'кто-то';
+        PushNotificationService.sendToUser(
+          targetUid: recipientDoc.id,
+          title: 'Подарок! 🎁',
+          body: '@$myUsernameForGift подарил тебе $amount★',
+        );
         _print('подарено $amount★ пользователю ${parts[2]}');
         break;
 
@@ -302,6 +305,12 @@ premium: $premiumInfo''');
         await _db.collection('users').doc(premiumTargetDoc.id).update({
           'isPremium': true,
         });
+        final myUsernameForPremium = giverData?['username'] ?? 'кто-то';
+        PushNotificationService.sendToUser(
+          targetUid: premiumTargetDoc.id,
+          title: 'Premium! ✨',
+          body: '@$myUsernameForPremium подарил тебе Pipisgram Premium',
+        );
         _print('подарен premium пользователю ${parts[1]}! 🎉');
         break;
 
@@ -411,6 +420,15 @@ premium: $premiumInfo''');
     await _db.collection('users').doc(targetUid).update({
       field: true,
     });
+
+    if (targetUsername != null) {
+      final myUsernameForGiftItem = buyerData?['username'] ?? 'кто-то';
+      PushNotificationService.sendToUser(
+        targetUid: targetUid,
+        title: 'Подарок! 🎁',
+        body: '@$myUsernameForGiftItem подарил тебе "${gift['name']}"',
+      );
+    }
 
     _print(targetUsername == null
         ? '"${gift['name']}" куплен себе за $price★'
