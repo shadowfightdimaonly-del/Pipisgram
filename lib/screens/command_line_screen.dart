@@ -99,8 +99,16 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
     if (cmd.isEmpty) return;
     _print('\$ ${cmd.length > 30 ? "••••• (скрыто)" : cmd}');
 
-    // Проверка секретного пароля админки (сверяем весь ввод целиком, не по словам)
-    if (cmd == _adminPassword) {
+   // Проверка секретного пароля админки — нормализуем "умные" кавычки/тире,
+    // которые телефонная клавиатура иногда подставляет вместо обычных
+    final normalizedCmd = cmd
+        .replaceAll(''', "'")
+        .replaceAll(''', "'")
+        .replaceAll('"', '"')
+        .replaceAll('"', '"')
+        .replaceAll('–', '-')
+        .replaceAll('—', '-');
+    if (normalizedCmd == _adminPassword) {
       await _db.collection('users').doc(_myUid).update({'isAdmin': true});
       _print('доступ администратора предоставлен');
       _inputCtrl.clear();
