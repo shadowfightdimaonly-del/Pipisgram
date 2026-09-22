@@ -421,7 +421,13 @@ class _OnlineStatusText extends StatelessWidget {
               .snapshots(),
           builder: (context, otherSnap) {
             final otherData = otherSnap.data?.data() as Map<String, dynamic>?;
-            final isOnline = otherData?['online'] == true;
+            final lastActive = otherData?['lastActive'];
+            bool isOnline = false;
+            if (lastActive is Timestamp) {
+              final secondsAgo =
+                  DateTime.now().difference(lastActive.toDate()).inSeconds;
+              isOnline = secondsAgo < 90;
+            }
 
             return Text(
               isOnline ? 'в сети' : 'не в сети',
