@@ -41,8 +41,8 @@ class _ChatScreenState extends State<ChatScreen> {
     _checkIfGroup();
     _checkEditRights();
     _loadBubbleStyles();
+    _chatService.markMessagesAsRead(widget.chatId);
   }
-
   Future<void> _checkIfGroup() async {
     final doc = await FirebaseFirestore.instance
         .collection('chats')
@@ -337,6 +337,38 @@ class _ChatScreenState extends State<ChatScreen> {
                                         ),
                                       ),
                                     ),
+                                  Text(
+                                    DateFormat('HH:mm').format(msg.timestamp),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: (isMine
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .onPrimary
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant)
+                                          .withOpacity(0.7),
+                                    ),
+                                  ),
+                                  if (isMine) ...[
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      msg.read
+                                          ? Icons.done_all
+                                          : Icons.done,
+                                      size: 14,
+                                      color: msg.read
+                                          ? Colors.lightBlueAccent
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .onPrimary
+                                              .withOpacity(0.7),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                                    
                                   Text(
                                     DateFormat('HH:mm').format(msg.timestamp),
                                     style: TextStyle(
