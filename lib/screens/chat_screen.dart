@@ -278,6 +278,9 @@ class _ChatScreenState extends State<ChatScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(widget.otherUsername),
+                          if (widget.otherUid != null)
+                            _OnlineStatusText(
+                                myUid: _myUid, otherUid: widget.otherUid!),
                           if (_isGroup)
                             const Text('нажми для управления группой',
                                 style: TextStyle(
@@ -503,6 +506,51 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+class _OnlineStatusText extends StatelessWidget {
+  final String myUid;
+  final String otherUid;
+
+  const _OnlineStatusText({required this.myUid, required this.otherUid});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream:
+          FirebaseFirestore.instance.collection('users').doc(myUid).snapshots(),
+      builder: (context, mySnap) {
+        final myData = mySnap.data?.data() as Map<String, dynamic>?;
+        final myShowStatus = myData?['showOnlineStatus'] ?? true;
+
+        if (!myShowStatus) return const SizedBox.shrink();
+
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(otherUid)
+              .snapshots(),
+          builder: (context, otherSnap) {
+            final otherData = otherSnap.data?.data() as Map<String, dynamic>?;
+            final lastActive = otherData?['lastActive'];
+            bool isOnline = false;
+            if (lastActive is Timestamp) {
+              final secondsAgo =
+                  DateTime.now().difference(lastActive.toDate()).inSeconds;
+              isOnline = secondsAgo < 90;
+            }
+
+            return Text(
+              isOnline ? 'в сети' : 'не в сети',
+              style: TextStyle(
+                fontSize: 12,
+                color: isOnline ? Colors.greenAccent : Colors.grey,
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
