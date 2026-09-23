@@ -472,14 +472,17 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Row(
                 children: [
                   IconButton(
+                    IconButton(
                     icon: _uploadingImage
                         ? const SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.image_outlined),
-                    onPressed: _uploadingImage ? null : _sendImage,
+                        : const Icon(Icons.attach_file),
+                    onPressed: _uploadingImage
+                        ? null
+                        : () => _showAttachMenu(context),
                   ),
                   Expanded(
                     child: TextField(
@@ -554,3 +557,38 @@ class _OnlineStatusText extends StatelessWidget {
     );
   }
 }
+Future<void> _openMedia(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _showAttachMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.image_outlined),
+              title: const Text('Фото'),
+              onTap: () {
+                Navigator.pop(context);
+                _sendImage();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam_outlined),
+              title: const Text('Видео'),
+              onTap: () {
+                Navigator.pop(context);
+                _sendVideo();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
