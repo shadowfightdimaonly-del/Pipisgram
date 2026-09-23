@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/chat_service.dart';
+import '../services/image_upload_service.dart';
 import '../models/message.dart';
 import 'group_info_screen.dart';
 import 'view_profile_screen.dart';
@@ -110,11 +113,39 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  bool _uploadingImage = false;
+
   void _send() {
     final text = _textCtrl.text.trim();
     if (text.isEmpty) return;
     _chatService.sendMessage(widget.chatId, text);
     _textCtrl.clear();
+  }
+
+  Future<void> _sendImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1200,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+
+    setState(() => _uploadingImage = true);
+
+    try {
+      final bytes = await File(picked.path).readAsBytes();
+      final url = await ImageUploadService.uploadImage(bytes);
+      if (url != null) {
+        await _chatService.sendImageMessage(widget.chatId, url);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось загрузить фото')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
+    }
   }
 
   void _showMessageActions(Message msg) {
@@ -399,6 +430,16 @@ class _ChatScreenState extends State<ChatScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               child: Row(
                 children: [
+                  IconButton(
+                    icon: _uploadingImage
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.image_outlined),
+                    onPressed: _uploadingImage ? null : _sendImage,
+                  ),
                   Expanded(
                     child: TextField(
                       controller: _textCtrl,
