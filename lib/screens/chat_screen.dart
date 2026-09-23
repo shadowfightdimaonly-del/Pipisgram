@@ -215,47 +215,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildOnlineStatusText() {
-    if (widget.otherUid == null) return const SizedBox.shrink();
-
-    return StreamBuilder<DocumentSnapshot>(
-      stream:
-          FirebaseFirestore.instance.collection('users').doc(_myUid).snapshots(),
-      builder: (context, mySnap) {
-        final myData = mySnap.data?.data() as Map<String, dynamic>?;
-        final myShowStatus = myData?['showOnlineStatus'] ?? true;
-
-        if (!myShowStatus) return const SizedBox.shrink();
-
-        return StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('users')
-              .doc(widget.otherUid!)
-              .snapshots(),
-          builder: (context, otherSnap) {
-            final otherData =
-                otherSnap.data?.data() as Map<String, dynamic>?;
-            final lastActive = otherData?['lastActive'];
-            bool isOnline = false;
-            if (lastActive is Timestamp) {
-              final secondsAgo =
-                  DateTime.now().difference(lastActive.toDate()).inSeconds;
-              isOnline = secondsAgo < 90;
-            }
-
-            return Text(
-              isOnline ? 'в сети' : 'не в сети',
-              style: TextStyle(
-                fontSize: 12,
-                color: isOnline ? Colors.greenAccent : Colors.grey,
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -319,8 +278,6 @@ class _ChatScreenState extends State<ChatScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(widget.otherUsername),
-                          if (widget.otherUid != null)
-                            _buildOnlineStatusText(),
                           if (_isGroup)
                             const Text('нажми для управления группой',
                                 style: TextStyle(
