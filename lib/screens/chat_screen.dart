@@ -216,7 +216,128 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   @override
-< truncated lines 219-340 >
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: _isOffline
+            ? const Text('Ожидание сети...',
+                style: TextStyle(fontStyle: FontStyle.italic))
+            : GestureDetector(
+                onTap: () {
+                  if (_isGroup) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GroupInfoScreen(
+                          chatId: widget.chatId,
+                          groupName: widget.otherUsername,
+                        ),
+                      ),
+                    );
+                  } else if (widget.otherUid != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ViewProfileScreen(uid: widget.otherUid!),
+                      ),
+                    );
+                  }
+                },
+                child: Row(
+                  children: [
+                    if (!_isGroup && widget.otherUid != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: StreamBuilder<DocumentSnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(widget.otherUid)
+                              .snapshots(),
+                          builder: (context, snap) {
+                            final data =
+                                snap.data?.data() as Map<String, dynamic>?;
+                            final avatarUrl = data?['avatarUrl'];
+                            return CircleAvatar(
+                              radius: 18,
+                              backgroundImage: avatarUrl != null
+                                  ? NetworkImage(avatarUrl)
+                                  : null,
+                              child: avatarUrl == null
+                                  ? Text(widget.otherUsername.isNotEmpty
+                                      ? widget.otherUsername[0].toUpperCase()
+                                      : '?')
+                                  : null,
+                            );
+                          },
+                        ),
+                      ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(widget.otherUsername),
+                          if (widget.otherUid != null)
+                            _OnlineStatusText(
+                                myUid: _myUid, otherUid: widget.otherUid!),
+                          if (_isGroup)
+                            const Text('нажми для управления группой',
+                                style: TextStyle(
+                                    fontSize: 11, color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: StreamBuilder<List<Message>>(
+              stream: _chatService.messagesStream(widget.chatId),
+              builder: (context, snapshot) {
+                final messages = snapshot.data ?? [];
+                if (messages.isEmpty) {
+                  return const Center(child: Text('Сообщений пока нет'));
+                }
+                return ListView.builder(
+                  reverse: true,
+                  padding: const EdgeInsets.all(12),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final msg = messages[index];
+                    final isMine = msg.senderId == _myUid;
+                    return GestureDetector(
+                      onLongPress: () => _showMessageActions(msg),
+                      child: Align(
+                        alignment: isMine
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.of(context).size.width * 0.75,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isMine
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.surfaceVariant,
+                            borderRadius: BorderRadius.circular(
+                                isMine ? _myBubbleRadius : _otherBubbleRadius),
+                            image: (isMine
+                                        ? _myBubbleTexture
+                                        : _otherBubbleTexture) !=
+                                    null
+                                ? DecorationImage(
+                                    image: NetworkImage((isMine
+                                        ? _myBubbleTexture
+                                        : _otherBubbleTexture)!),
+                                    fit: BoxFit.cover,
+                                    colorFilter: ColorFilter.mode(
                                       Colors.black.withOpacity(0.15),
                                       BlendMode.darken,
                                     ),
