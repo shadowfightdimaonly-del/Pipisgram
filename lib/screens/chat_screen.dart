@@ -351,16 +351,44 @@ class _ChatScreenState extends State<ChatScreen> {
                                     ),
                                   ),
                                 ),
-                              Text(
-                                msg.text,
-                                style: TextStyle(
-                                  color: isMine
-                                      ? Theme.of(context).colorScheme.onPrimary
-                                      : Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
-                                ),
-                              ),
+                              if (msg.type == MessageType.image && msg.mediaUrl != null)
+  ClipRRect(
+    borderRadius: BorderRadius.circular(12),
+    child: Image.network(
+      msg.mediaUrl!,
+      width: 220,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+
+        return const SizedBox(
+          width: 220,
+          height: 180,
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return const SizedBox(
+          width: 220,
+          height: 100,
+          child: Center(
+            child: Text('Не удалось загрузить фото'),
+          ),
+        );
+      },
+    ),
+  )
+else
+  Text(
+    msg.text,
+    style: TextStyle(
+      color: isMine
+          ? Theme.of(context).colorScheme.onPrimary
+          : Theme.of(context).colorScheme.onSurfaceVariant,
+    ),
+  ),
                               const SizedBox(height: 2),
                               Row(
                                 mainAxisSize: MainAxisSize.min,
