@@ -31,7 +31,8 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _myBubbleTexture;
   double _otherBubbleRadius = 16.0;
   String? _otherBubbleTexture;
-
+  bool _isOffline = false;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   @override
   void initState() {
     super.initState();
