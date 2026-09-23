@@ -1,5 +1,10 @@
+
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/chat_service.dart';
@@ -8,6 +13,7 @@ import '../models/message.dart';
 import 'group_info_screen.dart';
 import 'view_profile_screen.dart';
 import 'profile_settings_screen.dart';
+
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String otherUsername;
@@ -35,7 +41,9 @@ class _ChatScreenState extends State<ChatScreen> {
   double _otherBubbleRadius = 16.0;
   String? _otherBubbleTexture;
   bool _isOffline = false;
+  bool _uploadingImage = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+
   @override
   void initState() {
     super.initState();
@@ -59,6 +67,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _connectivitySub?.cancel();
     super.dispose();
   }
+
   Future<void> _checkIfGroup() async {
     final doc = await FirebaseFirestore.instance
         .collection('chats')
@@ -112,8 +121,6 @@ class _ChatScreenState extends State<ChatScreen> {
       });
     }
   }
-
-  bool _uploadingImage = false;
 
   void _send() {
     final text = _textCtrl.text.trim();
@@ -217,70 +224,74 @@ class _ChatScreenState extends State<ChatScreen> {
             ? const Text('Ожидание сети...',
                 style: TextStyle(fontStyle: FontStyle.italic))
             : GestureDetector(
-          onTap: () {
-            if (_isGroup) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => GroupInfoScreen(
-                    chatId: widget.chatId,
-                    groupName: widget.otherUsername,
-                  ),
-                ),
-              );
-            } else if (widget.otherUid != null) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      ViewProfileScreen(uid: widget.otherUid!),
-                ),
-              );
-            }
-          },
-          child: Row(
-            children: [
-              if (!_isGroup && widget.otherUid != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(widget.otherUid)
-                        .snapshots(),
-                    builder: (context, snap) {
-                      final data = snap.data?.data() as Map<String, dynamic>?;
-                      final avatarUrl = data?['avatarUrl'];
-                      return CircleAvatar(
-                        radius: 18,
-                        backgroundImage:
-                            avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                        child: avatarUrl == null
-                            ? Text(widget.otherUsername.isNotEmpty
-                                ? widget.otherUsername[0].toUpperCase()
-                                : '?')
-                            : null,
-                      );
-                    },
-                  ),
-                ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+                onTap: () {
+                  if (_isGroup) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GroupInfoScreen(
+                          chatId: widget.chatId,
+                          groupName: widget.otherUsername,
+                        ),
+                      ),
+                    );
+                  } else if (widget.otherUid != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ViewProfileScreen(uid: widget.otherUid!),
+                      ),
+                    );
+                  }
+                },
+                child: Row(
                   children: [
-                    Text(widget.otherUsername),
-                    if (widget.otherUid != null)
-                      _OnlineStatusText(myUid: _myUid, otherUid: widget.otherUid!),
-                    if (_isGroup)
-                      const Text('нажми для управления группой',
-                          style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    if (!_isGroup && widget.otherUid != null)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: StreamBuilder<DocumentSnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(widget.otherUid)
+                              .snapshots(),
+                          builder: (context, snap) {
+                            final data =
+                                snap.data?.data() as Map<String, dynamic>?;
+                            final avatarUrl = data?['avatarUrl'];
+                            return CircleAvatar(
+                              radius: 18,
+                              backgroundImage: avatarUrl != null
+                                  ? NetworkImage(avatarUrl)
+                                  : null,
+                              child: avatarUrl == null
+                                  ? Text(widget.otherUsername.isNotEmpty
+                                      ? widget.otherUsername[0].toUpperCase()
+                                      : '?')
+                                  : null,
+                            );
+                          },
+                        ),
+                      ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(widget.otherUsername),
+                          if (widget.otherUid != null)
+                            _OnlineStatusText(
+                                myUid: _myUid, otherUid: widget.otherUid!),
+                          if (_isGroup)
+                            const Text('нажми для управления группой',
+                                style: TextStyle(
+                                    fontSize: 11, color: Colors.grey)),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
       ),
       body: Column(
         children: [
@@ -345,50 +356,55 @@ class _ChatScreenState extends State<ChatScreen> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
                                     ),
                                   ),
                                 ),
-                              if (msg.type == MessageType.image && msg.mediaUrl != null)
-  ClipRRect(
-    borderRadius: BorderRadius.circular(12),
-    child: Image.network(
-      msg.mediaUrl!,
-      width: 220,
-      fit: BoxFit.cover,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-
-        return const SizedBox(
-          width: 220,
-          height: 180,
-          child: Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
-      },
-      errorBuilder: (context, error, stackTrace) {
-        return const SizedBox(
-          width: 220,
-          height: 100,
-          child: Center(
-            child: Text('Не удалось загрузить фото'),
-          ),
-        );
-      },
-    ),
-  )
-else
-  Text(
-    msg.text,
-    style: TextStyle(
-      color: isMine
-          ? Theme.of(context).colorScheme.onPrimary
-          : Theme.of(context).colorScheme.onSurfaceVariant,
-    ),
-  ),
+                              if (msg.type == MessageType.image &&
+                                  msg.mediaUrl != null)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.network(
+                                    msg.mediaUrl!,
+                                    width: 220,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const SizedBox(
+                                        width: 220,
+                                        height: 180,
+                                        child: Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder:
+                                        (context, error, stackTrace) {
+                                      return const SizedBox(
+                                        width: 220,
+                                        height: 100,
+                                        child: Center(
+                                          child: Text('Не удалось загрузить фото'),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                )
+                              else
+                                Text(
+                                  msg.text,
+                                  style: TextStyle(
+                                    color: isMine
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .onPrimary
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                  ),
+                                ),
                               const SizedBox(height: 2),
                               Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -429,9 +445,7 @@ else
                                   if (isMine) ...[
                                     const SizedBox(width: 4),
                                     Icon(
-                                      msg.read
-                                          ? Icons.done_all
-                                          : Icons.done,
+                                      msg.read ? Icons.done_all : Icons.done,
                                       size: 14,
                                       color: msg.read
                                           ? Colors.lightBlueAccent
@@ -542,3 +556,5 @@ class _OnlineStatusText extends StatelessWidget {
     );
   }
 }
+DARTEOF
+cat /home/claude/chat_screen_full.dart | wc -l
