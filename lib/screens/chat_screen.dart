@@ -40,6 +40,21 @@ class _ChatScreenState extends State<ChatScreen> {
     _checkEditRights();
     _loadBubbleStyles();
     _chatService.markMessagesAsRead(widget.chatId);
+    _watchConnectivity();
+  }
+
+  void _watchConnectivity() {
+    _connectivitySub =
+        Connectivity().onConnectivityChanged.listen((results) {
+      final offline = results.every((r) => r == ConnectivityResult.none);
+      if (mounted) setState(() => _isOffline = offline);
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectivitySub?.cancel();
+    super.dispose();
   }
   Future<void> _checkIfGroup() async {
     final doc = await FirebaseFirestore.instance
@@ -167,7 +182,10 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: GestureDetector(
+        title: _isOffline
+            ? const Text('Ожидание сети...',
+                style: TextStyle(fontStyle: FontStyle.italic))
+            : GestureDetector(
           onTap: () {
             if (_isGroup) {
               Navigator.push(
@@ -364,23 +382,6 @@ class _ChatScreenState extends State<ChatScreen> {
                                               .withOpacity(0.7),
                                     ),
                                   ],
-                                ],
-                              ),
-                                    
-                                  Text(
-                                    DateFormat('HH:mm').format(msg.timestamp),
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: (isMine
-                                              ? Theme.of(context)
-                                                  .colorScheme
-                                                  .onPrimary
-                                              : Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurfaceVariant)
-                                          .withOpacity(0.7),
-                                    ),
-                                  ),
                                 ],
                               ),
                             ],
