@@ -35,6 +35,9 @@ dependencies:
   # Проверка интернет-соединения
   connectivity_plus: ^6.0.5
 
+  # Открытие файлов (видео/аудио) во внешних приложениях
+  url_launcher: ^6.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
