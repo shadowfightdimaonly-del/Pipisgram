@@ -153,6 +153,21 @@ class ChatService {
             snap.docs.map((d) => Message.fromMap(d.id, d.data())).toList());
   }
 
+  /// Отмечает как прочитанные все чужие сообщения в чате
+  Future<void> markMessagesAsRead(String chatId) async {
+    final unread = await _db
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .where('senderId', isNotEqualTo: _myUid)
+        .where('read', isEqualTo: false)
+        .get();
+
+    for (var doc in unread.docs) {
+      await doc.reference.update({'read': true});
+    }
+  } 
+
   Future<void> sendMessage(String chatId, String text) async {
     final msgRef = _db.collection('chats').doc(chatId).collection('messages');
     final now = DateTime.now();
