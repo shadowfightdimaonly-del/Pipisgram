@@ -32,6 +32,9 @@ dependencies:
   # Push-уведомления
   onesignal_flutter: ^5.1.3
 
+  # Проверка интернет-соединения
+  connectivity_plus: ^6.0.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
