@@ -155,9 +155,13 @@ class _ChatScreenState extends State<ChatScreen> {
     final picked = await picker.pickVideo(source: ImageSource.gallery);
     if (picked == null) return;
 
-    setState(() => _uploadingMedia = true);
+    setState(() => _uploadingImage = true);
+
     try {
-      final url = await FileUploadService.uploadFile(picked.path, picked.name);
+      final url = await FileUploadService.uploadFile(
+        picked.path,
+        picked.name,
+      );
       if (url != null) {
         await _chatService.sendVideoMessage(widget.chatId, url);
       } else if (mounted) {
@@ -166,7 +170,30 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _uploadingMedia = false);
+      if (mounted) setState(() => _uploadingImage = false);
+    }
+  }
+
+  Future<void> _sendAudio() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.audio);
+    if (result == null || result.files.single.path == null) return;
+
+    final path = result.files.single.path!;
+    final name = result.files.single.name;
+
+    setState(() => _uploadingImage = true);
+
+    try {
+      final url = await FileUploadService.uploadFile(path, name);
+      if (url != null) {
+        await _chatService.sendAudioMessage(widget.chatId, url);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось загрузить аудио')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
     }
   }
 
