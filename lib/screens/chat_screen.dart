@@ -360,7 +360,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                     ),
                                   ),
                                 ),
-                              if (msg.type == MessageType.image &&
+                             if (msg.type == MessageType.image &&
                                   msg.mediaUrl != null)
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
@@ -389,6 +389,33 @@ class _ChatScreenState extends State<ChatScreen> {
                                         ),
                                       );
                                     },
+                                  ),
+                                )
+                              else if (msg.type == MessageType.video &&
+                                  msg.mediaUrl != null)
+                                GestureDetector(
+                                  onTap: () => _openMedia(msg.mediaUrl!),
+                                  child: Container(
+                                    width: 220,
+                                    height: 140,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black87,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Center(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.play_circle_fill,
+                                              color: Colors.white, size: 48),
+                                          SizedBox(height: 6),
+                                          Text('Открыть видео',
+                                              style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12)),
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 )
                               else
