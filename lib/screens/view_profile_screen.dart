@@ -155,6 +155,14 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                       const Icon(Icons.workspace_premium,
                           color: Colors.amber, size: 20),
                     ],
+                    if (data?['badgeEmoji'] != null) ...[
+                      const SizedBox(width: 6),
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: Image.network(data!['badgeEmoji']),
+                      ),
+                    ],
                   ],
                 ),
               ),
