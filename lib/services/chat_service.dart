@@ -166,60 +166,9 @@ class ChatService {
     for (var doc in unread.docs) {
       await doc.reference.update({'read': true});
     }
-  } 
+  }
 
   Future<void> sendImageMessage(String chatId, String imageUrl) async {
-Future<void> sendVideoMessage(String chatId, String videoUrl) async {
-    final msgRef = _db.collection('chats').doc(chatId).collection('messages');
-    final now = DateTime.now();
-
-    final myUserDoc = await _db.collection('users').doc(_myUid).get();
-    final myUsername = myUserDoc.data()?['username'] ?? 'Неизвестный';
-
-    await msgRef.add({
-      'senderId': _myUid,
-      'senderUsername': myUsername,
-      'text': '',
-      'type': 'video',
-      'mediaUrl': videoUrl,
-      'timestamp': now.millisecondsSinceEpoch,
-      'read': false,
-    });
-
-    await _db.collection('chats').doc(chatId).update({
-      'lastMessage': '🎥 Видео',
-      'lastMessageTime': FieldValue.serverTimestamp(),
-    });
-
-    final chatDoc = await _db.collection('chats').doc(chatId).get();
-    final chatData = chatDoc.data();
-    if (chatData != null) {
-      final isGroup = chatData['isGroup'] == true;
-      final participants = List<String>.from(chatData['participants']);
-
-      if (isGroup) {
-        final groupName = chatData['groupName'] ?? 'Группа';
-        PushNotificationService.sendToGroup(
-          participantUids: participants,
-          excludeUid: _myUid,
-          title: groupName,
-          body: '@$myUsername отправил видео',
-        );
-      } else {
-        final otherUid = participants.firstWhere(
-          (id) => id != _myUid,
-          orElse: () => '',
-        );
-        if (otherUid.isNotEmpty) {
-          PushNotificationService.sendToUser(
-            targetUid: otherUid,
-            title: '@$myUsername',
-            body: '🎥 Видео',
-          );
-        }
-      }
-    }
-  }
     final msgRef = _db.collection('chats').doc(chatId).collection('messages');
     final now = DateTime.now();
 
@@ -271,10 +220,61 @@ Future<void> sendVideoMessage(String chatId, String videoUrl) async {
     }
   }
 
-  Future<void> sendAudioMessage(String chatId, String audioUrl) async {
+  Future<void> sendVideoMessage(String chatId, String videoUrl) async {
     final msgRef = _db.collection('chats').doc(chatId).collection('messages');
     final now = DateTime.now();
 
+    final myUserDoc = await _db.collection('users').doc(_myUid).get();
+    final myUsername = myUserDoc.data()?['username'] ?? 'Неизвестный';
+
+    await msgRef.add({
+      'senderId': _myUid,
+      'senderUsername': myUsername,
+      'text': '',
+      'type': 'video',
+      'mediaUrl': videoUrl,
+      'timestamp': now.millisecondsSinceEpoch,
+      'read': false,
+    });
+
+    await _db.collection('chats').doc(chatId).update({
+      'lastMessage': '🎥 Видео',
+      'lastMessageTime': FieldValue.serverTimestamp(),
+    });
+
+    final chatDoc = await _db.collection('chats').doc(chatId).get();
+    final chatData = chatDoc.data();
+    if (chatData != null) {
+      final isGroup = chatData['isGroup'] == true;
+      final participants = List<String>.from(chatData['participants']);
+
+      if (isGroup) {
+        final groupName = chatData['groupName'] ?? 'Группа';
+        PushNotificationService.sendToGroup(
+          participantUids: participants,
+          excludeUid: _myUid,
+          title: groupName,
+          body: '@$myUsername отправил видео',
+        );
+      } else {
+        final otherUid = participants.firstWhere(
+          (id) => id != _myUid,
+          orElse: () => '',
+        );
+        if (otherUid.isNotEmpty) {
+          PushNotificationService.sendToUser(
+            targetUid: otherUid,
+            title: '@$myUsername',
+            body: '🎥 Видео',
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> sendAudioMessage(String chatId, String audioUrl) async {
+    final msgRef = _db.collection('chats').doc(chatId).collection('messages');
+    final now = DateTime.now();
     final myUserDoc = await _db.collection('users').doc(_myUid).get();
     final myUsername = myUserDoc.data()?['username'] ?? 'Неизвестный';
 
@@ -293,43 +293,13 @@ Future<void> sendVideoMessage(String chatId, String videoUrl) async {
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
 
-    final chatDoc = await _db.collection('chats').doc(chatId).get();
-    final chatData = chatDoc.data();
-    if (chatData != null) {
-      final isGroup = chatData['isGroup'] == true;
-      final participants = List<String>.from(chatData['participants']);
-
-      if (isGroup) {
-        final groupName = chatData['groupName'] ?? 'Группа';
-        PushNotificationService.sendToGroup(
-          participantUids: participants,
-          excludeUid: _myUid,
-          title: groupName,
-          body: '@$myUsername отправил аудио',
-        );
-      } else {
-        final otherUid = participants.firstWhere(
-          (id) => id != _myUid,
-          orElse: () => '',
-        );
-        if (otherUid.isNotEmpty) {
-          PushNotificationService.sendToUser(
-            targetUid: otherUid,
-            title: '@$myUsername',
-            body: '🎵 Аудио',
-          );
-        }
-      }
-    }
-  }
-
+    await _sendMediaNotification(chatId, myUsername, '🎵 Аудио', 'аудио');
   }
 
   Future<void> sendFileMessage(
       String chatId, String fileUrl, String fileName) async {
     final msgRef = _db.collection('chats').doc(chatId).collection('messages');
     final now = DateTime.now();
-
     final myUserDoc = await _db.collection('users').doc(_myUid).get();
     final myUsername = myUserDoc.data()?['username'] ?? 'Неизвестный';
 
@@ -348,32 +318,36 @@ Future<void> sendVideoMessage(String chatId, String videoUrl) async {
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
 
+    await _sendMediaNotification(chatId, myUsername, '📎 $fileName', 'файл');
+  }
+
+  Future<void> _sendMediaNotification(
+      String chatId, String myUsername, String body, String mediaName) async {
     final chatDoc = await _db.collection('chats').doc(chatId).get();
     final chatData = chatDoc.data();
-    if (chatData != null) {
-      final isGroup = chatData['isGroup'] == true;
-      final participants = List<String>.from(chatData['participants']);
+    if (chatData == null) return;
 
-      if (isGroup) {
-        final groupName = chatData['groupName'] ?? 'Группа';
-        PushNotificationService.sendToGroup(
-          participantUids: participants,
-          excludeUid: _myUid,
-          title: groupName,
-          body: '@$myUsername отправил файл',
+    final isGroup = chatData['isGroup'] == true;
+    final participants = List<String>.from(chatData['participants']);
+    if (isGroup) {
+      final groupName = chatData['groupName'] ?? 'Группа';
+      PushNotificationService.sendToGroup(
+        participantUids: participants,
+        excludeUid: _myUid,
+        title: groupName,
+        body: '@$myUsername отправил $mediaName',
+      );
+    } else {
+      final otherUid = participants.firstWhere(
+        (id) => id != _myUid,
+        orElse: () => '',
+      );
+      if (otherUid.isNotEmpty) {
+        PushNotificationService.sendToUser(
+          targetUid: otherUid,
+          title: '@$myUsername',
+          body: body,
         );
-      } else {
-        final otherUid = participants.firstWhere(
-          (id) => id != _myUid,
-          orElse: () => '',
-        );
-        if (otherUid.isNotEmpty) {
-          PushNotificationService.sendToUser(
-            targetUid: otherUid,
-            title: '@$myUsername',
-            body: '📎 $fileName',
-          );
-        }
       }
     }
   }
