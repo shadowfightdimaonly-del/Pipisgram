@@ -1,13 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-/// Загружает изображения на imgBB и возвращает прямую ссылку.
 class ImageUploadService {
   static const String _apiKey = '3f193a8a167fda9a821ecf1ecaaae2fc';
   static const String _uploadUrl = 'https://api.imgbb.com/1/upload';
 
-  /// Принимает байты картинки, возвращает URL загруженного изображения
-  /// или null при ошибке.
   static Future<String?> uploadImage(List<int> imageBytes) async {
     try {
       final base64Image = base64Encode(imageBytes);
@@ -17,6 +15,11 @@ class ImageUploadService {
         body: {
           'key': _apiKey,
           'image': base64Image,
+        },
+      ).timeout(
+        const Duration(seconds: 60),
+        onTimeout: () {
+          throw TimeoutException('Загрузка заняла слишком много времени');
         },
       );
 
