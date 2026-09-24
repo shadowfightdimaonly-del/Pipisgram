@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:file_picker/file_picker.dart';
 import '../services/chat_service.dart';
 import '../services/image_upload_service.dart';
 import '../services/file_upload_service.dart';
@@ -204,7 +205,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _showAttachMenu(BuildContext context) {
+void _showAttachMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -227,12 +228,19 @@ class _ChatScreenState extends State<ChatScreen> {
                 _sendVideo();
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.audiotrack_outlined),
+              title: const Text('Аудио'),
+              onTap: () {
+                Navigator.pop(context);
+                _sendAudio();
+              },
+            ),
           ],
         ),
       ),
     );
   }
-
   void _showMessageActions(Message msg) {
     final isMine = msg.senderId == _myUid;
     final canEdit = isMine || (_isGroup && _canEditOthersMessages);
