@@ -1,27 +1,46 @@
 import 'package:http/http.dart' as http;
 
-/// Загружает файлы (видео, аудио, документы) на catbox.moe — бесплатный
-/// хостинг файлов без регистрации и API-ключа. Возвращает прямую ссылку.
 class FileUploadService {
   static const String _uploadUrl = 'https://catbox.moe/user/api.php';
 
-  static Future<String?> uploadFile(String filePath, String fileName) async {
+  static Future<String?> uploadFile(
+    String filePath,
+    String fileName,
+  ) async {
     try {
-      final request = http.MultipartRequest('POST', Uri.parse(_uploadUrl));
-      request.fields['reqtype'] = 'fileupload';
-      request.files.add(
-        await http.MultipartFile.fromPath('fileToUpload', filePath,
-            filename: fileName),
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse(_uploadUrl),
       );
 
-      final response = await request.send();
-      final body = await response.stream.bytesToString();
+      request.fields['reqtype'] = 'fileupload';
 
-      if (response.statusCode == 200 && body.startsWith('https://')) {
-        return body.trim();
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'fileToUpload',
+          filePath,
+          filename: fileName,
+        ),
+      );
+
+      final response = await request.send().timeout(
+        const Duration(seconds: 60),
+      );
+
+      final body = await response.stream
+          .bytesToString()
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final url = body.trim();
+
+        if (url.startsWith('https://')) {
+          return url;
+        }
       }
+
       return null;
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
