@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/image_upload_service.dart';
+import 'custom_emoji_screen.dart';
 
 const List<Map<String, dynamic>> bubbleStyles = [
   {'id': 'rounded', 'name': 'Круглые', 'radius': 16.0},
@@ -238,8 +239,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   backgroundColor: profileColor,
                   flexibleSpace: FlexibleSpaceBar(
                     background: GestureDetector(
-                      onTap: _uploadingBackground ? null : _pickAndUploadBackground,
-                      onLongPress: _backgroundUrl != null ? _removeBackground : null,
+                      onTap: _uploadingBackground
+                          ? null
+                          : _pickAndUploadBackground,
+                      onLongPress:
+                          _backgroundUrl != null ? _removeBackground : null,
                       child: Container(
                         decoration: BoxDecoration(
                           color: profileColor,
@@ -258,7 +262,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             GestureDetector(
-                              onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
+                              onTap: _uploadingAvatar
+                                  ? null
+                                  : _pickAndUploadAvatar,
                               child: Stack(
                                 children: [
                                   CircleAvatar(
@@ -285,7 +291,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                       child: CircleAvatar(
                                         backgroundColor: Colors.black45,
                                         child: CircularProgressIndicator(
-                                            color: Colors.white),
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
                                   Positioned(
@@ -294,8 +301,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                     child: CircleAvatar(
                                       radius: 14,
                                       backgroundColor: Colors.black87,
-                                      child: const Icon(Icons.camera_alt,
-                                          size: 16, color: Colors.white),
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -322,7 +332,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                               const Padding(
                                 padding: EdgeInsets.only(top: 8),
                                 child: CircularProgressIndicator(
-                                    color: Colors.white),
+                                  color: Colors.white,
+                                ),
                               ),
                           ],
                         ),
@@ -336,7 +347,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: Text(
                         'Нажми на фон, чтобы загрузить свой (долгое нажатие — убрать)',
-                        style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[500],
+                        ),
                       ),
                     ),
                     const Padding(
@@ -344,9 +358,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       child: Text(
                         'Цвет профиля',
                         style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
                     Padding(
@@ -355,7 +370,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         spacing: 12,
                         runSpacing: 12,
                         children: _colorOptions.map((color) {
-                          final isSelected = color.value == _profileColorValue;
+                          final isSelected =
+                              color.value == _profileColorValue;
                           return GestureDetector(
                             onTap: () => _setProfileColor(color),
                             child: Container(
@@ -365,7 +381,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 color: color,
                                 shape: BoxShape.circle,
                                 border: isSelected
-                                    ? Border.all(color: Colors.white, width: 3)
+                                    ? Border.all(
+                                        color: Colors.white,
+                                        width: 3,
+                                      )
                                     : null,
                                 boxShadow: isSelected
                                     ? [
@@ -377,8 +396,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                     : null,
                               ),
                               child: isSelected
-                                  ? const Icon(Icons.check,
-                                      color: Colors.white, size: 20)
+                                  ? const Icon(
+                                      Icons.check,
+                                      color: Colors.white,
+                                      size: 20,
+                                    )
                                   : null,
                             ),
                           );
@@ -390,9 +412,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       child: Text(
                         'Форма облачка сообщений',
                         style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
                     Padding(
@@ -406,7 +429,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             onTap: () => _setBubbleStyle(style['id']),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 10),
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? profileColor
@@ -414,7 +439,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                         .colorScheme
                                         .surfaceVariant,
                                 borderRadius: BorderRadius.circular(
-                                    style['radius'] as double),
+                                  style['radius'] as double,
+                                ),
                               ),
                               child: Text(
                                 style['name'],
@@ -435,9 +461,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       child: Text(
                         'Текстура твоих облачков',
                         style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
                     Padding(
@@ -459,7 +486,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 borderRadius: BorderRadius.circular(12),
                                 image: _bubbleTextureUrl != null
                                     ? DecorationImage(
-                                        image: NetworkImage(_bubbleTextureUrl!),
+                                        image:
+                                            NetworkImage(_bubbleTextureUrl!),
                                         fit: BoxFit.cover,
                                       )
                                     : null,
@@ -470,12 +498,16 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                         width: 18,
                                         height: 18,
                                         child: CircularProgressIndicator(
-                                            strokeWidth: 2, color: Colors.white),
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     )
                                   : (_bubbleTextureUrl == null
-                                      ? const Icon(Icons.add_photo_alternate_outlined,
-                                          color: Colors.white)
+                                      ? const Icon(
+                                          Icons.add_photo_alternate_outlined,
+                                          color: Colors.white,
+                                        )
                                       : null),
                             ),
                           ),
@@ -486,43 +518,43 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                   ? 'Нажми, чтобы заменить. Долгое нажатие — убрать.'
                                   : 'Нажми, чтобы загрузить свой узор для облачков',
                               style: TextStyle(
-                                  fontSize: 12, color: Colors.grey[500]),           Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.emoji_emotions_outlined),
-                        title: const Text('Мои эмодзи'),
-                        subtitle: const Text('Загрузи свои и выбери значок к нику'),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const CustomEmojiScreen()),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceVariant,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.vpn_key_outlined),
+                                fontSize: 12,
+                                color: Colors.grey[500],
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading:
+                            const Icon(Icons.emoji_emotions_outlined),
+                        title: const Text('Мои эмодзи'),
+                        subtitle:
+                            const Text('Загрузи свои и выбери значок к нику'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const CustomEmojiScreen(),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          color:
+                              Theme.of(context).colorScheme.surfaceVariant,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
@@ -531,15 +563,24 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Твой код',
-                                      style: TextStyle(fontSize: 12, color: Colors.grey)),
-                                  Text(_userCode,
-                                      style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 2)),
+                                  const Text(
+                                    'Твой код',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  Text(
+                                    _userCode,
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 2,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -551,7 +592,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     SwitchListTile(
                       title: const Text('Показывать статус "в сети"'),
                       subtitle: const Text(
-                          'Если выключено — ты не увидишь и чужой онлайн-статус тоже'),
+                        'Если выключено — ты не увидишь и чужой онлайн-статус тоже',
+                      ),
                       value: _showOnlineStatus,
                       onChanged: _toggleOnlineStatus,
                     ),
@@ -562,46 +604,61 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         child: Text(
                           'Мои подарки',
                           style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
                       if (_hasEditGift)
                         const ListTile(
-                          leading: Icon(Icons.edit_outlined, color: Colors.blue),
+                          leading: Icon(
+                            Icons.edit_outlined,
+                            color: Colors.blue,
+                          ),
                           title: Text('Редактор сообщений'),
                           dense: true,
                         ),
                       if (_hasAvatarGift)
                         const ListTile(
-                          leading:
-                              Icon(Icons.image_outlined, color: Colors.green),
+                          leading: Icon(
+                            Icons.image_outlined,
+                            color: Colors.green,
+                          ),
                           title: Text('Право менять чужие аватарки'),
                           dense: true,
                         ),
                       if (_hasEditGift || _hasAvatarGift)
                         SwitchListTile(
-                          title: const Text('Показывать эти подарки в профиле'),
-                          subtitle:
-                              const Text('Другие увидят их у тебя в профиле'),
+                          title: const Text(
+                            'Показывать эти подарки в профиле',
+                          ),
+                          subtitle: const Text(
+                            'Другие увидят их у тебя в профиле',
+                          ),
                           value: _showGifts,
                           onChanged: _toggleShowGifts,
                         ),
                       if (_hasTakeoverGift) ...[
                         const Divider(height: 24),
                         const ListTile(
-                          leading: Icon(Icons.warning_amber_rounded,
-                              color: Colors.deepOrange),
+                          leading: Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.deepOrange,
+                          ),
                           title: Text('Власть над группами'),
                           subtitle: Text(
-                              'Мощный подарок — по умолчанию скрыт от других'),
+                            'Мощный подарок — по умолчанию скрыт от других',
+                          ),
                           dense: true,
                         ),
                         SwitchListTile(
-                          title: const Text('Показывать этот подарок другим'),
+                          title: const Text(
+                            'Показывать этот подарок другим',
+                          ),
                           subtitle: const Text(
-                              'Осторожно: люди будут знать о твоей власти над группами'),
+                            'Осторожно: люди будут знать о твоей власти над группами',
+                          ),
                           value: _showTakeoverGift,
                           onChanged: _toggleShowTakeoverGift,
                         ),
