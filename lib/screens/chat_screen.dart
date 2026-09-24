@@ -326,29 +326,76 @@ void _showAttachMenu(BuildContext context) {
       );
     }
 
-    if (msg.type == MessageType.video && msg.mediaUrl != null) {
-      return GestureDetector(
-        onTap: () => _openMedia(msg.mediaUrl!),
-        child: Container(
-          width: 220,
-          height: 140,
-          decoration: BoxDecoration(
-            color: Colors.black87,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.play_circle_fill, color: Colors.white, size: 48),
-                SizedBox(height: 6),
-                Text('Открыть видео', style: TextStyle(color: Colors.white, fontSize: 12)),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
+    else if (msg.type == MessageType.video &&
+                                  msg.mediaUrl != null)
+                                GestureDetector(
+                                  onTap: () => _openMedia(msg.mediaUrl!),
+                                  child: Container(
+                                    width: 220,
+                                    height: 140,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black87,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Center(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.play_circle_fill,
+                                              color: Colors.white, size: 48),
+                                          SizedBox(height: 6),
+                                          Text('Открыть видео',
+                                              style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 12)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else if (msg.type == MessageType.audio &&
+                                  msg.mediaUrl != null)
+                                GestureDetector(
+                                  onTap: () => _openMedia(msg.mediaUrl!),
+                                  child: Container(
+                                    width: 200,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.play_circle_fill,
+                                            color: isMine
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .onPrimary
+                                                : Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                            size: 32),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            'Аудиофайл',
+                                            style: TextStyle(
+                                              color: isMine
+                                                  ? Theme.of(context)
+                                                      .colorScheme
+                                                      .onPrimary
+                                                  : Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              else
 
     return Text(
       msg.text,
