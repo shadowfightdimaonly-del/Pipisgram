@@ -350,46 +350,95 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
 
-    if ((msg.type == MessageType.video || msg.type == MessageType.audio) &&
-        msg.mediaUrl != null) {
-      final isVideo = msg.type == MessageType.video;
-      return GestureDetector(
-        onTap: () => _openMedia(msg.mediaUrl!),
-        child: Container(
-          width: isVideo ? 220 : 200,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: isVideo ? Colors.black87 : Colors.black.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isVideo ? Icons.play_circle_fill : Icons.audiotrack,
-                color: isVideo
-                    ? Colors.white
-                    : (isMine
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : Theme.of(context).colorScheme.onSurfaceVariant),
-                size: 36,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                isVideo ? 'Открыть видео' : 'Аудиофайл',
-                style: TextStyle(
-                  color: isVideo
-                      ? Colors.white
-                      : (isMine
-                          ? Theme.of(context).colorScheme.onPrimary
-                          : Theme.of(context).colorScheme.onSurfaceVariant),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+    if ((msg.type == MessageType.video || else if (msg.type == MessageType.audio &&
+                                  msg.mediaUrl != null)
+                                GestureDetector(
+                                  onTap: () => _openMedia(msg.mediaUrl!),
+                                  child: Container(
+                                    width: 200,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.play_circle_fill,
+                                            color: isMine
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .onPrimary
+                                                : Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                            size: 32),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            'Аудиофайл',
+                                            style: TextStyle(
+                                              color: isMine
+                                                  ? Theme.of(context)
+                                                      .colorScheme
+                                                      .onPrimary
+                                                  : Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              else if (msg.type == MessageType.file &&
+                                  msg.mediaUrl != null)
+                                GestureDetector(
+                                  onTap: () => _openMedia(msg.mediaUrl!),
+                                  child: Container(
+                                    width: 200,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.insert_drive_file,
+                                            color: isMine
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .onPrimary
+                                                : Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                            size: 28),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            msg.text.isNotEmpty
+                                                ? msg.text
+                                                : 'Файл',
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: isMine
+                                                  ? Theme.of(context)
+                                                      .colorScheme
+                                                      .onPrimary
+                                                  : Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              else
 
     if (msg.type == MessageType.file && msg.mediaUrl != null) {
       return GestureDetector(
