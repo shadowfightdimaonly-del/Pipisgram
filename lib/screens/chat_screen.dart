@@ -84,7 +84,10 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _loadBubbleStyles() async {
-    final myDoc = await FirebaseFirestore.instance.collection('users').doc(_myUid).get();
+    final myDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(_myUid)
+        .get();
     final myData = myDoc.data();
     final myStyleId = myData?['bubbleStyle'] ?? 'rounded';
     final myStyle = bubbleStyles.firstWhere(
@@ -326,6 +329,10 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageContent(Message msg, bool isMine) {
+    final textColor = isMine
+        ? Theme.of(context).colorScheme.onPrimary
+        : Theme.of(context).colorScheme.onSurfaceVariant;
+
     if (msg.type == MessageType.image && msg.mediaUrl != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -350,134 +357,78 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
 
-    if ((msg.type == MessageType.video || else if (msg.type == MessageType.audio &&
-                                  msg.mediaUrl != null)
-                                GestureDetector(
-                                  onTap: () => _openMedia(msg.mediaUrl!),
-                                  child: Container(
-                                    width: 200,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.play_circle_fill,
-                                            color: isMine
-                                                ? Theme.of(context)
-                                                    .colorScheme
-                                                    .onPrimary
-                                                : Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                            size: 32),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            'Аудиофайл',
-                                            style: TextStyle(
-                                              color: isMine
-                                                  ? Theme.of(context)
-                                                      .colorScheme
-                                                      .onPrimary
-                                                  : Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              else if (msg.type == MessageType.file &&
-                                  msg.mediaUrl != null)
-                                GestureDetector(
-                                  onTap: () => _openMedia(msg.mediaUrl!),
-                                  child: Container(
-                                    width: 200,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.insert_drive_file,
-                                            color: isMine
-                                                ? Theme.of(context)
-                                                    .colorScheme
-                                                    .onPrimary
-                                                : Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                            size: 28),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            msg.text.isNotEmpty
-                                                ? msg.text
-                                                : 'Файл',
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              color: isMine
-                                                  ? Theme.of(context)
-                                                      .colorScheme
-                                                      .onPrimary
-                                                  : Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              else
+    if ((msg.type == MessageType.video || msg.type == MessageType.audio) &&
+        msg.mediaUrl != null) {
+      return GestureDetector(
+        onTap: () => _openMedia(msg.mediaUrl!),
+        child: Container(
+          width: 200,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.play_circle_fill,
+                color: textColor,
+                size: 32,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  msg.type == MessageType.video ? 'Видеофайл' : 'Аудиофайл',
+                  style: TextStyle(color: textColor),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     if (msg.type == MessageType.file && msg.mediaUrl != null) {
       return GestureDetector(
         onTap: () => _openMedia(msg.mediaUrl!),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.insert_drive_file,
-              size: 32,
-              color: isMine
-                  ? Theme.of(context).colorScheme.onPrimary
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                msg.text.isNotEmpty ? msg.text : 'Файл',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: isMine
-                      ? Theme.of(context).colorScheme.onPrimary
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
+        child: Container(
+          width: 200,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.insert_drive_file,
+                color: textColor,
+                size: 28,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  msg.text.isNotEmpty ? msg.text : 'Файл',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: textColor),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
 
     return Text(
       msg.text,
-      style: TextStyle(
-        color: isMine
-            ? Theme.of(context).colorScheme.onPrimary
-            : Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
+      style: TextStyle(color: textColor),
     );
   }
 
@@ -486,7 +437,10 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         title: _isOffline
-            ? const Text('Ожидание сети...', style: TextStyle(fontStyle: FontStyle.italic))
+            ? const Text(
+                'Ожидание сети...',
+                style: TextStyle(fontStyle: FontStyle.italic),
+              )
             : GestureDetector(
                 onTap: () {
                   if (_isGroup) {
@@ -503,7 +457,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ViewProfileScreen(uid: widget.otherUid!),
+                        builder: (context) =>
+                            ViewProfileScreen(uid: widget.otherUid!),
                       ),
                     );
                   }
@@ -519,13 +474,18 @@ class _ChatScreenState extends State<ChatScreen> {
                               .doc(widget.otherUid)
                               .snapshots(),
                           builder: (context, snap) {
-                            final data = snap.data?.data() as Map<String, dynamic>?;
+                            final data =
+                                snap.data?.data() as Map<String, dynamic>?;
                             final avatarUrl = data?['avatarUrl'];
                             return CircleAvatar(
                               radius: 18,
-                              backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                              backgroundImage: avatarUrl != null
+                                  ? NetworkImage(avatarUrl)
+                                  : null,
                               child: avatarUrl == null
-                                  ? Text(widget.otherUsername.isNotEmpty ? widget.otherUsername[0].toUpperCase() : '?')
+                                  ? Text(widget.otherUsername.isNotEmpty
+                                      ? widget.otherUsername[0].toUpperCase()
+                                      : '?')
                                   : null,
                             );
                           },
@@ -538,11 +498,15 @@ class _ChatScreenState extends State<ChatScreen> {
                         children: [
                           Text(widget.otherUsername),
                           if (widget.otherUid != null)
-                            _OnlineStatusText(myUid: _myUid, otherUid: widget.otherUid!),
+                            _OnlineStatusText(
+                              myUid: _myUid,
+                              otherUid: widget.otherUid!,
+                            ),
                           if (_isGroup)
                             const Text(
                               'нажми для управления группой',
-                              style: TextStyle(fontSize: 11, color: Colors.grey),
+                              style:
+                                  TextStyle(fontSize: 11, color: Colors.grey),
                             ),
                         ],
                       ),
@@ -568,7 +532,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   itemBuilder: (context, index) {
                     final msg = messages[index];
                     final isMine = msg.senderId == _myUid;
-                    final bubbleTexture = isMine ? _myBubbleTexture : _otherBubbleTexture;
+                    final bubbleTexture =
+                        isMine ? _myBubbleTexture : _otherBubbleTexture;
                     final bubbleColor = isMine
                         ? Theme.of(context).colorScheme.primary
                         : Theme.of(context).colorScheme.surfaceVariant;
@@ -579,12 +544,18 @@ class _ChatScreenState extends State<ChatScreen> {
                     return GestureDetector(
                       onLongPress: () => _showMessageActions(msg),
                       child: Align(
-                        alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+                        alignment: isMine
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
                         child: Container(
                           margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
                           constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.75,
+                            maxWidth:
+                                MediaQuery.of(context).size.width * 0.75,
                           ),
                           decoration: BoxDecoration(
                             color: bubbleColor,
@@ -613,7 +584,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).colorScheme.primary,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
                                     ),
                                   ),
                                 ),
@@ -624,7 +597,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                 children: [
                                   if (msg.edited)
                                     Padding(
-                                      padding: const EdgeInsets.only(right: 4),
+                                      padding:
+                                          const EdgeInsets.only(right: 4),
                                       child: Text(
                                         'изменено',
                                         style: TextStyle(
@@ -644,7 +618,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                   if (isMine) ...[
                                     const SizedBox(width: 4),
                                     Icon(
-                                      msg.read ? Icons.done_all : Icons.done,
+                                      msg.read
+                                          ? Icons.done_all
+                                          : Icons.done,
                                       size: 14,
                                       color: msg.read
                                           ? Colors.lightBlueAccent
@@ -676,7 +652,9 @@ class _ChatScreenState extends State<ChatScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.attach_file),
-                    onPressed: _uploadingMedia ? null : () => _showAttachMenu(context),
+                    onPressed: _uploadingMedia
+                        ? null
+                        : () => _showAttachMenu(context),
                   ),
                   Expanded(
                     child: TextField(
@@ -686,7 +664,8 @@ class _ChatScreenState extends State<ChatScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 16),
                       ),
                       onSubmitted: (_) => _send(),
                     ),
@@ -710,25 +689,36 @@ class _OnlineStatusText extends StatelessWidget {
   final String myUid;
   final String otherUid;
 
-  const _OnlineStatusText({required this.myUid, required this.otherUid});
+  const _OnlineStatusText({
+    required this.myUid,
+    required this.otherUid,
+  });
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('users').doc(myUid).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(myUid)
+          .snapshots(),
       builder: (context, mySnap) {
         final myData = mySnap.data?.data() as Map<String, dynamic>?;
         final myShowStatus = myData?['showOnlineStatus'] ?? true;
         if (!myShowStatus) return const SizedBox.shrink();
 
         return StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance.collection('users').doc(otherUid).snapshots(),
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(otherUid)
+              .snapshots(),
           builder: (context, otherSnap) {
-            final otherData = otherSnap.data?.data() as Map<String, dynamic>?;
+            final otherData =
+                otherSnap.data?.data() as Map<String, dynamic>?;
             final lastActive = otherData?['lastActive'];
             bool isOnline = false;
             if (lastActive is Timestamp) {
-              final secondsAgo = DateTime.now().difference(lastActive.toDate()).inSeconds;
+              final secondsAgo =
+                  DateTime.now().difference(lastActive.toDate()).inSeconds;
               isOnline = secondsAgo < 90;
             }
             return Text(
