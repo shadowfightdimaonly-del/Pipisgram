@@ -36,8 +36,11 @@ dependencies:
   connectivity_plus: ^6.0.5
 
   # Открытие файлов (видео/аудио) во внешних приложениях
+  # Открытие файлов (видео/аудио) во внешних приложениях
   url_launcher: ^6.3.1
 
+  # Выбор файлов (аудио/документы) из хранилища
+  file_picker: ^8.1.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
