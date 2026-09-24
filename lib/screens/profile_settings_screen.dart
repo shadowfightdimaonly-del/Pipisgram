@@ -486,7 +486,32 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                   ? 'Нажми, чтобы заменить. Долгое нажатие — убрать.'
                                   : 'Нажми, чтобы загрузить свой узор для облачков',
                               style: TextStyle(
-                                  fontSize: 12, color: Colors.grey[500]),
+                                  fontSize: 12, color: Colors.grey[500]),           Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.emoji_emotions_outlined),
+                        title: const Text('Мои эмодзи'),
+                        subtitle: const Text('Загрузи свои и выбери значок к нику'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const CustomEmojiScreen()),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceVariant,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.vpn_key_outlined),
                             ),
                           ),
                         ],
