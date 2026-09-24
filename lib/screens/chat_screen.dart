@@ -6,8 +6,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/chat_service.dart';
 import '../services/image_upload_service.dart';
+import '../services/file_upload_service.dart';
 import '../models/message.dart';
 import 'group_info_screen.dart';
 import 'view_profile_screen.dart';
@@ -152,6 +154,66 @@ class _ChatScreenState extends State<ChatScreen> {
     } finally {
       if (mounted) setState(() => _uploadingImage = false);
     }
+  }
+
+  Future<void> _sendVideo() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickVideo(source: ImageSource.gallery);
+    if (picked == null) return;
+
+    setState(() => _uploadingImage = true);
+
+    try {
+      final url = await FileUploadService.uploadFile(
+        picked.path,
+        picked.name,
+      );
+      if (url != null) {
+        await _chatService.sendVideoMessage(widget.chatId, url);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось загрузить видео')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
+    }
+  }
+
+  Future<void> _openMedia(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _showAttachMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.image_outlined),
+              title: const Text('Фото'),
+              onTap: () {
+                Navigator.pop(context);
+                _sendImage();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam_outlined),
+              title: const Text('Видео'),
+              onTap: () {
+                Navigator.pop(context);
+                _sendVideo();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showMessageActions(Message msg) {
@@ -360,7 +422,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                     ),
                                   ),
                                 ),
-                             if (msg.type == MessageType.image &&
+                              if (msg.type == MessageType.image &&
                                   msg.mediaUrl != null)
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
@@ -499,7 +561,6 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    IconButton(
                     icon: _uploadingImage
                         ? const SizedBox(
                             width: 20,
@@ -539,6 +600,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 }
+
 class _OnlineStatusText extends StatelessWidget {
   final String myUid;
   final String otherUid;
@@ -584,38 +646,3 @@ class _OnlineStatusText extends StatelessWidget {
     );
   }
 }
-Future<void> _openMedia(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  void _showAttachMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.image_outlined),
-              title: const Text('Фото'),
-              onTap: () {
-                Navigator.pop(context);
-                _sendImage();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.videocam_outlined),
-              title: const Text('Видео'),
-              onTap: () {
-                Navigator.pop(context);
-                _sendVideo();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
