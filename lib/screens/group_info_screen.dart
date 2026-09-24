@@ -101,7 +101,21 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                                 : '?')
                             : null,
                       ),
-                      title: Text('@$username${isMe ? ' (ты)' : ''}'),
+                      title: Row(
+                        children: [
+                          Flexible(
+                            child: Text('@$username${isMe ? ' (ты)' : ''}'),
+                          ),
+                          if (userData?['badgeEmoji'] != null) ...[
+                            const SizedBox(width: 4),
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: Image.network(userData!['badgeEmoji']),
+                            ),
+                          ],
+                        ],
+                      ),
                       subtitle: isOwner ? const Text('Владелец') : null,
                       onTap: () => Navigator.push(
                         context,
