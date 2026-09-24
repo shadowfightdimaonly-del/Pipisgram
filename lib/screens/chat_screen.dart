@@ -6,8 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/chat_service.dart';
 import '../services/image_upload_service.dart';
 import '../services/file_upload_service.dart';
@@ -156,13 +156,9 @@ class _ChatScreenState extends State<ChatScreen> {
     final picked = await picker.pickVideo(source: ImageSource.gallery);
     if (picked == null) return;
 
-    setState(() => _uploadingImage = true);
-
+    setState(() => _uploadingMedia = true);
     try {
-      final url = await FileUploadService.uploadFile(
-        picked.path,
-        picked.name,
-      );
+      final url = await FileUploadService.uploadFile(picked.path, picked.name);
       if (url != null) {
         await _chatService.sendVideoMessage(widget.chatId, url);
       } else if (mounted) {
@@ -171,7 +167,7 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _uploadingImage = false);
+      if (mounted) setState(() => _uploadingMedia = false);
     }
   }
 
@@ -181,9 +177,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final path = result.files.single.path!;
     final name = result.files.single.name;
-
-    setState(() => _uploadingImage = true);
-
+    setState(() => _uploadingMedia = true);
     try {
       final url = await FileUploadService.uploadFile(path, name);
       if (url != null) {
@@ -194,7 +188,28 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _uploadingImage = false);
+      if (mounted) setState(() => _uploadingMedia = false);
+    }
+  }
+
+  Future<void> _sendFile() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.any);
+    if (result == null || result.files.single.path == null) return;
+
+    final path = result.files.single.path!;
+    final name = result.files.single.name;
+    setState(() => _uploadingMedia = true);
+    try {
+      final url = await FileUploadService.uploadFile(path, name);
+      if (url != null) {
+        await _chatService.sendFileMessage(widget.chatId, url, name);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось загрузить файл')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingMedia = false);
     }
   }
 
@@ -205,7 +220,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-void _showAttachMenu(BuildContext context) {
+  void _showAttachMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -236,11 +251,20 @@ void _showAttachMenu(BuildContext context) {
                 _sendAudio();
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.insert_drive_file_outlined),
+              title: const Text('Файл'),
+              onTap: () {
+                Navigator.pop(context);
+                _sendFile();
+              },
+            ),
           ],
         ),
       ),
     );
   }
+
   void _showMessageActions(Message msg) {
     final isMine = msg.senderId == _myUid;
     final canEdit = isMine || (_isGroup && _canEditOthersMessages);
@@ -326,76 +350,77 @@ void _showAttachMenu(BuildContext context) {
       );
     }
 
-    else if (msg.type == MessageType.video &&
-                                  msg.mediaUrl != null)
-                                GestureDetector(
-                                  onTap: () => _openMedia(msg.mediaUrl!),
-                                  child: Container(
-                                    width: 220,
-                                    height: 140,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black87,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const Center(
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.play_circle_fill,
-                                              color: Colors.white, size: 48),
-                                          SizedBox(height: 6),
-                                          Text('Открыть видео',
-                                              style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 12)),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              else if (msg.type == MessageType.audio &&
-                                  msg.mediaUrl != null)
-                                GestureDetector(
-                                  onTap: () => _openMedia(msg.mediaUrl!),
-                                  child: Container(
-                                    width: 200,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.play_circle_fill,
-                                            color: isMine
-                                                ? Theme.of(context)
-                                                    .colorScheme
-                                                    .onPrimary
-                                                : Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
-                                            size: 32),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            'Аудиофайл',
-                                            style: TextStyle(
-                                              color: isMine
-                                                  ? Theme.of(context)
-                                                      .colorScheme
-                                                      .onPrimary
-                                                  : Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              else
+    if ((msg.type == MessageType.video || msg.type == MessageType.audio) &&
+        msg.mediaUrl != null) {
+      final isVideo = msg.type == MessageType.video;
+      return GestureDetector(
+        onTap: () => _openMedia(msg.mediaUrl!),
+        child: Container(
+          width: isVideo ? 220 : 200,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: isVideo ? Colors.black87 : Colors.black.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isVideo ? Icons.play_circle_fill : Icons.audiotrack,
+                color: isVideo
+                    ? Colors.white
+                    : (isMine
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context).colorScheme.onSurfaceVariant),
+                size: 36,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isVideo ? 'Открыть видео' : 'Аудиофайл',
+                style: TextStyle(
+                  color: isVideo
+                      ? Colors.white
+                      : (isMine
+                          ? Theme.of(context).colorScheme.onPrimary
+                          : Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (msg.type == MessageType.file && msg.mediaUrl != null) {
+      return GestureDetector(
+        onTap: () => _openMedia(msg.mediaUrl!),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.insert_drive_file,
+              size: 32,
+              color: isMine
+                  ? Theme.of(context).colorScheme.onPrimary
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                msg.text.isNotEmpty ? msg.text : 'Файл',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isMine
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Text(
       msg.text,
