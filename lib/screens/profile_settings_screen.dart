@@ -36,6 +36,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   String? _avatarUrl;
   String? _backgroundUrl;
   String? _bubbleTextureUrl;
+  String? _badgeEmoji;
   int _profileColorValue = 0xFF2AABEE;
   String _bubbleStyle = 'rounded';
 
@@ -72,6 +73,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _avatarUrl = data?['avatarUrl'];
       _backgroundUrl = data?['profileBackgroundUrl'];
       _bubbleTextureUrl = data?['bubbleTextureUrl'];
+      _badgeEmoji = data?['badgeEmoji'];
       _profileColorValue = data?['profileColor'] ?? 0xFF2AABEE;
       _bubbleStyle = data?['bubbleStyle'] ?? 'rounded';
       _hasEditGift = data?['hasGiftEditMessages'] == true;
@@ -312,12 +314,27 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Text(
-                              _username.isEmpty ? '—' : '@$_username',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _username.isEmpty ? '—' : '@$_username',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              if (_badgeEmoji != null) ...[
+                                const SizedBox(width: 6),
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: Image.network(_badgeEmoji!),
+                                ),
+                              ],
+                            ],
+                          ),
                               ),
                             ),
                             const SizedBox(height: 4),
