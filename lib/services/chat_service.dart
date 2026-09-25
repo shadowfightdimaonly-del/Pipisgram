@@ -352,7 +352,32 @@ class ChatService {
     }
   }
 
+  Future<void> sendEmojiMessage(String chatId, String emojiUrl) async {
+    final msgRef = _db.collection('chats').doc(chatId).collection('messages');
+    final now = DateTime.now();
+
+    final myUserDoc = await _db.collection('users').doc(_myUid).get();
+    final myUsername = myUserDoc.data()?['username'] ?? 'Неизвестный';
+
+    await msgRef.add({
+      'senderId': _myUid,
+      'senderUsername': myUsername,
+      'text': '',
+      'type': 'emoji',
+      'mediaUrl': emojiUrl,
+      'timestamp': now.millisecondsSinceEpoch,
+      'read': false,
+    });
+
+    await _db.collection('chats').doc(chatId).update({
+      'lastMessage': '😀 Эмодзи',
+      'lastMessageTime': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> sendMessage(String chatId, String text) async {
+
+  
     final msgRef = _db.collection('chats').doc(chatId).collection('messages');
     final now = DateTime.now();
 
