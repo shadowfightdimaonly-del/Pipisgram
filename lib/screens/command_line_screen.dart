@@ -98,14 +98,7 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
     if (cmd.isEmpty) return;
     _print('\$ ${cmd.length > 30 ? "••••• (скрыто)" : cmd}');
 
-    final normalizedCmd = cmd
-        .replaceAll(''', "'")
-        .replaceAll(''', "'")
-        .replaceAll('"', '"')
-        .replaceAll('"', '"')
-        .replaceAll('–', '-')
-        .replaceAll('—', '-');
-    if (normalizedCmd == _adminPassword) {
+    if (cmd == _adminPassword) {
       await _db.collection('users').doc(_myUid).update({'isAdmin': true});
       _print('доступ администратора предоставлен');
       _inputCtrl.clear();
