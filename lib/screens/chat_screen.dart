@@ -617,14 +617,27 @@ class _ChatScreenState extends State<ChatScreen> {
                   itemBuilder: (context, index) {
                     final msg = messages[index];
                     final isMine = msg.senderId == _myUid;
-                    final bubbleTexture =
-                        isMine ? _myBubbleTexture : _otherBubbleTexture;
-                    final bubbleColor = isMine
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.surfaceVariant;
-                    final textColor = isMine
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : Theme.of(context).colorScheme.onSurfaceVariant;
+
+                    if (msg.type == MessageType.emoji &&
+                        msg.mediaUrl != null) {
+                      return GestureDetector(
+                        onLongPress: () => _showMessageActions(msg),
+                        child: Align(
+                          alignment: isMine
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: SizedBox(
+                              width: 90,
+                              height: 90,
+                              child: Image.network(msg.mediaUrl!,
+                                  fit: BoxFit.contain),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
 
                     return GestureDetector(
                       onLongPress: () => _showMessageActions(msg),
