@@ -310,7 +310,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 _sendVideo();
               },
             ),
-            ListTile(
+           ListTile(
               leading: const Icon(Icons.audiotrack_outlined),
               title: const Text('Аудио'),
               onTap: () {
@@ -318,6 +318,27 @@ class _ChatScreenState extends State<ChatScreen> {
                 _sendAudio();
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.insert_drive_file_outlined),
+              title: const Text('Файл'),
+              onTap: () {
+                Navigator.pop(context);
+                _sendFile();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.emoji_emotions_outlined),
+              title: const Text('Мой эмодзи'),
+              onTap: () {
+                Navigator.pop(context);
+                _showEmojiPicker();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
             ListTile(
               leading: const Icon(Icons.insert_drive_file_outlined),
               title: const Text('Файл'),
