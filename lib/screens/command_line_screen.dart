@@ -4,8 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'mini_games_screen.dart';
 import '../services/push_notification_service.dart';
 
-const String _adminPassword =
-    'admin_status_6_7_4_5_9_1_0_1488_67_67_12345 ALCPWBVOQPQNCOQBVIR/@#&_-±(]\'ñ%=•¶π=®[`¶~§~~~]{{{}';
+const String _adminPassword = 'admin_status_pipisgram_19873';
 const int _premiumPrice = 750;
 const Map<String, Map<String, dynamic>> _gifts = {
   '1': {
