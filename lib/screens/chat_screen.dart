@@ -201,12 +201,76 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final path = result.files.single.path!;
     final name = result.files.single.name;
-    setState(() => _uploadingMedia = true);
+
+    setState(() => _uploadingImage = true);
+
     try {
       final url = await FileUploadService.uploadFile(path, name);
       if (url != null) {
         await _chatService.sendFileMessage(widget.chatId, url, name);
       } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось загрузить файл')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
+    }
+  }
+
+  void _showEmojiPicker() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(_myUid)
+              .snapshots(),
+          builder: (context, snap) {
+            final data = snap.data?.data() as Map<String, dynamic>?;
+            final emojis = List<String>.from(data?['customEmojis'] ?? []);
+
+            if (emojis.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(24),
+                child: Text(
+                  'У тебя пока нет своих эмодзи — загрузи их в настройках профиля',
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: GridView.builder(
+                shrinkWrap: true,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: emojis.length,
+                itemBuilder: (context, index) {
+                  final url = emojis[index];
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      _chatService.sendEmojiMessage(widget.chatId, url);
+                    },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(url, fit: BoxFit.cover),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Не удалось загрузить файл')),
         );
