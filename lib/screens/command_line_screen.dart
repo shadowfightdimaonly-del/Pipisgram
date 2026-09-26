@@ -221,6 +221,26 @@ premium: $premiumInfo''');
         _print('юзернейм изменён на @$newUsername');
         break;
 
+       case 'admin_star':
+        if (!await _isAdmin()) {
+          _print('неизвестная команда: "$cmd"');
+          break;
+        }
+        if (parts.length < 2) {
+          _print('используй: admin_star <количество>');
+          break;
+        }
+        final adminAmount = int.tryParse(parts[1]);
+        if (adminAmount == null || adminAmount <= 0 || adminAmount > 1000) {
+          _print('количество должно быть от 1 до 1000');
+          break;
+        }
+        await _db.collection('users').doc(_myUid).update({
+          'shadowStars': FieldValue.increment(adminAmount),
+        });
+        _print('начислено $adminAmount★ (админ)');
+        break;
+
       case 'shadow_star':
         if (parts.length < 3) {
           _print('используй: shadow_star <количество> @username');
