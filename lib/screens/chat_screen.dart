@@ -295,12 +295,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
       final response = await http
           .get(Uri.parse(url))
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 25));
 
       if (response.statusCode == 200) {
         final file = File(filePath);
         await file.writeAsBytes(response.bodyBytes);
-        await OpenFilex.open(filePath).timeout(const Duration(seconds: 10));
+        await OpenFilex.open(filePath).timeout(const Duration(seconds: 25));
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Не удалось скачать файл')),
