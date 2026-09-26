@@ -596,7 +596,16 @@ class _ChatScreenState extends State<ChatScreen> {
                   itemBuilder: (context, index) {
                     final msg = messages[index];
                     final isMine = msg.senderId == _myUid;
+final bubbleColor = isMine
+    ? Theme.of(context).colorScheme.primary
+    : Theme.of(context).colorScheme.surfaceVariant;
 
+final bubbleTexture =
+    isMine ? _myBubbleTexture : _otherBubbleTexture;
+
+final textColor = isMine
+    ? Theme.of(context).colorScheme.onPrimary
+    : Theme.of(context).colorScheme.onSurfaceVariant;
                     if (msg.type == MessageType.emoji &&
                         msg.mediaUrl != null) {
                       return GestureDetector(
