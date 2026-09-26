@@ -528,7 +528,7 @@ class _ChatScreenState extends State<ChatScreen> {
             children: [
 
               if (isOpeningMedia)
-              if (_openingMe
+              
                 SizedBox(
                   width: 28,
                   height: 28,
