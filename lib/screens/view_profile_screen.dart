@@ -163,6 +163,11 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                         child: Image.network(data!['badgeEmoji']),
                       ),
                     ],
+                    if (data?['isAdmin'] == true) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.verified,
+                          color: Colors.lightBlueAccent, size: 20),
+                    ],
                   ],
                 ),
               ),
