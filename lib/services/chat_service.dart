@@ -220,7 +220,11 @@ class ChatService {
     }
   }
 
-  Future<void> sendVideoMessage(String chatId, String videoUrl) async {
+  Future<void> sendVideoMessage(
+  String chatId,
+  String videoUrl,
+  String fileName,
+) async {
     final msgRef = _db.collection('chats').doc(chatId).collection('messages');
     final now = DateTime.now();
 
@@ -230,7 +234,7 @@ class ChatService {
     await msgRef.add({
       'senderId': _myUid,
       'senderUsername': myUsername,
-      'text': '',
+      'text': fileName,
       'type': 'video',
       'mediaUrl': videoUrl,
       'timestamp': now.millisecondsSinceEpoch,
