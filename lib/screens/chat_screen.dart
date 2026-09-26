@@ -202,7 +202,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final path = result.files.single.path!;
     final name = result.files.single.name;
 
-    setState(() => _uploadingImage = true);
+    setState(() => _uploadingMedia = true);
 
     try {
       final url = await FileUploadService.uploadFile(path, name);
@@ -214,7 +214,7 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _uploadingImage = false);
+      if (mounted) setState(() => _uploadingMedia = false);
     }
   }
 
@@ -271,14 +271,6 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
     );
   }
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Не удалось загрузить файл')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _uploadingMedia = false);
-    }
-  }
 
   Future<void> _openMedia(String url) async {
     final uri = Uri.parse(url);
@@ -332,19 +324,6 @@ class _ChatScreenState extends State<ChatScreen> {
               onTap: () {
                 Navigator.pop(context);
                 _showEmojiPicker();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-            ListTile(
-              leading: const Icon(Icons.insert_drive_file_outlined),
-              title: const Text('Файл'),
-              onTap: () {
-                Navigator.pop(context);
-                _sendFile();
               },
             ),
           ],
