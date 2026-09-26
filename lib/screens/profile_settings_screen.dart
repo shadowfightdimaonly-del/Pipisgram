@@ -37,6 +37,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   String? _backgroundUrl;
   String? _bubbleTextureUrl;
   String? _badgeEmoji;
+  bool _isAdmin = false;
   int _profileColorValue = 0xFF2AABEE;
   String _bubbleStyle = 'rounded';
 
@@ -74,6 +75,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _backgroundUrl = data?['profileBackgroundUrl'];
       _bubbleTextureUrl = data?['bubbleTextureUrl'];
       _badgeEmoji = data?['badgeEmoji'];
+      _isAdmin = data?['isAdmin'] == true;
       _profileColorValue = data?['profileColor'] ?? 0xFF2AABEE;
       _bubbleStyle = data?['bubbleStyle'] ?? 'rounded';
       _hasEditGift = data?['hasGiftEditMessages'] == true;
