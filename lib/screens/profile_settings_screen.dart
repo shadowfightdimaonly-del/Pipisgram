@@ -314,28 +314,26 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _username.isEmpty ? '—' : '@$_username',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _username.isEmpty ? '—' : '@$_username',
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              ),
-                              if (_badgeEmoji != null) ...[
-                                const SizedBox(width: 6),
-                                SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: Image.network(_badgeEmoji!),
-                                ),
+                                if (_badgeEmoji != null) ...[
+                                  const SizedBox(width: 6),
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: Image.network(_badgeEmoji!),
+                                  ),
+                                ],
                               ],
-                            ],
-                          ),
-                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
