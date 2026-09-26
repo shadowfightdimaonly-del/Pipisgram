@@ -277,14 +277,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
   bool _openingMedia = false;
 
-  Future<void> _openMedia(String url) async {
-    if (_openingMedia) return;
-    setState(() => _openingMedia = true);
+  Future<void> _openMedia(String url, String fileName) async {
+  if (_openingMedia) return;
+  setState(() => _openingMedia = true);
 
-    try {
-      final fileName = url.split('/').last;
-      final tempDir = await getTemporaryDirectory();
-      final filePath = '${tempDir.path}/$fileName';
+  try {
+    final tempDir = await getTemporaryDirectory();
+    final filePath = '${tempDir.path}/$fileName';
 
       final response = await http
           .get(Uri.parse(url))
@@ -454,7 +453,10 @@ class _ChatScreenState extends State<ChatScreen> {
     else if (msg.type == MessageType.video &&
                                   msg.mediaUrl != null)
                                 GestureDetector(
-                                  onTap: () => _openMedia(msg.mediaUrl!),
+onTap: () => _openMedia(
+  msg.mediaUrl!,
+  msg.text.isNotEmpty ? msg.text : 'file',
+),                                  
                                   child: Container(
                                     width: 220,
                                     height: 140,
