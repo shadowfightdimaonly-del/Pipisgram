@@ -279,27 +279,37 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  bool _openingMedia = false;
+  String? _openingMediaId;
 
-  Future<void> _openMedia(String url, String fileName) async {
-  if (_openingMedia) return;
-  setState(() => _openingMedia = true);
+  Future<void> _openMedia(
+    String url,
+    String fileName,
+    String messageId,
+  ) async {
+    if (_openingMediaId != null) return;
+    setState(() => _openingMediaId = messageId);
 
-  try {
-    final tempDir = await getTemporaryDirectory();
-    final filePath = '${tempDir.path}/$fileName';
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final filePath = '${tempDir.path}/$fileName';
 
       final response = await http
           .get(Uri.parse(url))
-          .timeout(const Duration(seconds: 60));
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final file = File(filePath);
         await file.writeAsBytes(response.bodyBytes);
-        await OpenFilex.open(filePath);
+        await OpenFilex.open(filePath).timeout(const Duration(seconds: 10));
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Не удалось скачать файл')),
+        );
+      }
+    } on TimeoutException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Превышено время ожидания файла')),
         );
       }
     } catch (e) {
@@ -309,7 +319,9 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _openingMedia = false);
+      if (mounted && _openingMediaId == messageId) {
+        setState(() => _openingMediaId = null);
+      }
     }
   }
   void _showAttachMenu(BuildContext context) {
@@ -429,6 +441,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final textColor = isMine
         ? Theme.of(context).colorScheme.onPrimary
         : Theme.of(context).colorScheme.onSurfaceVariant;
+    final isOpeningMedia = _openingMediaId == msg.id;
 
     if (msg.type == MessageType.image && msg.mediaUrl != null) {
       return ClipRRect(
@@ -454,77 +467,72 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
 
-    else if (msg.type == MessageType.video &&
-                                  msg.mediaUrl != null)
-                                GestureDetector(
-onTap: () => _openMedia(
-  msg.mediaUrl!,
-  msg.text.isNotEmpty ? msg.text : 'video.mp4',
-),                                  
-                                  child: Container(
-                                    width: 220,
-                                    height: 140,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black87,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Center(
-                                      child: _openingMedia
-                                          ? const CircularProgressIndicator(
-                                              color: Colors.white)
-                                          : const Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(Icons.play_circle_fill,
-                                                    color: Colors.white,
-                                                    size: 48),
-                                                SizedBox(height: 6),
-                                                Text('Открыть видео',
-                                                    style: TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 12)),
-                                              ],
-                                            ),
-                                    ),
-                                  ),
-                                )
-   else if (msg.type == MessageType.file &&
-                                  msg.mediaUrl != null)
-                                GestureDetector(
-onTap: () => _openMedia(
-  msg.mediaUrl!,
-  msg.text.isNotEmpty ? msg.text : 'file',
-),                                  
-                                  child: Container(
-                                    width: 200,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        if (_openingMedia)
-                                          SizedBox(
-                                            width: 28,
-                                            height: 28,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: isMine
-                                                  ? Theme.of(context)
-                                                      .colorScheme
-                                                      .onPrimary
-                                                  : Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurfaceVariant,
-                                            ),
-                                          )
-                                        else
-                                        Icon(Icons.insert_drive_file,
-                color: textColor,
-                size: 28,
-              ),
+    if (msg.type == MessageType.video && msg.mediaUrl != null) {
+      return GestureDetector(
+        onTap: () => _openMedia(
+          msg.mediaUrl!,
+          msg.text.isNotEmpty ? msg.text : 'video.mp4',
+          msg.id,
+        ),
+        child: Container(
+          width: 220,
+          height: 140,
+          decoration: BoxDecoration(
+            color: Colors.black87,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: isOpeningMedia
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.play_circle_fill,
+                        color: Colors.white,
+                        size: 48,
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Открыть видео',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      );
+    }
+
+    if (msg.type == MessageType.file && msg.mediaUrl != null) {
+      return GestureDetector(
+        onTap: () => _openMedia(
+          msg.mediaUrl!,
+          msg.text.isNotEmpty ? msg.text : 'file',
+          msg.id,
+        ),
+        child: Container(
+          width: 200,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              if (isOpeningMedia)
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: isMine
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                )
+              else
+                Icon(Icons.insert_drive_file, color: textColor, size: 28),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
