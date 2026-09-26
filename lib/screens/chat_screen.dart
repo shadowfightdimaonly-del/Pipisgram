@@ -166,7 +166,11 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final url = await FileUploadService.uploadFile(picked.path, picked.name);
       if (url != null) {
-        await _chatService.sendVideoMessage(widget.chatId, url);
+       await _chatService.sendVideoMessage(
+  widget.chatId,
+  url,
+  picked.name,
+);
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Не удалось загрузить видео')),
@@ -455,7 +459,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 GestureDetector(
 onTap: () => _openMedia(
   msg.mediaUrl!,
-  msg.text.isNotEmpty ? msg.text : 'file',
+  msg.text.isNotEmpty ? msg.text : 'video.mp4',
 ),                                  
                                   child: Container(
                                     width: 220,
