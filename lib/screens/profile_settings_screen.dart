@@ -325,14 +325,19 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                     color: Colors.white,
                                   ),
                                 ),
-                                if (_badgeEmoji != null) ...[
-                                  const SizedBox(width: 6),
-                                  SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: Image.network(_badgeEmoji!),
-                                  ),
-                                ],
+                            if (_badgeEmoji != null) ...[
+                                const SizedBox(width: 6),
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: Image.network(_badgeEmoji!),
+                                ),
+                              ],
+                              if (_isAdmin) ...[
+                                const SizedBox(width: 6),
+                                const Icon(Icons.verified,
+                                    color: Colors.lightBlueAccent, size: 20),
+                              ],
                               ],
                             ),
                             const SizedBox(height: 4),
