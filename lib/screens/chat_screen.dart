@@ -484,10 +484,13 @@ onTap: () => _openMedia(
                                     ),
                                   ),
                                 )
-    else if (msg.type == MessageType.file &&
+   else if (msg.type == MessageType.file &&
                                   msg.mediaUrl != null)
                                 GestureDetector(
-                                  onTap: () => _openMedia(msg.mediaUrl!),
+onTap: () => _openMedia(
+  msg.mediaUrl!,
+  msg.text.isNotEmpty ? msg.text : 'file',
+),                                  
                                   child: Container(
                                     width: 200,
                                     padding: const EdgeInsets.symmetric(
