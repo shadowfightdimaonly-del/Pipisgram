@@ -472,7 +472,10 @@ class _ChatScreenState extends State<ChatScreen> {
         onTap: () => _openMedia(
           msg.mediaUrl!,
           msg.text.isNotEmpty ? msg.text : 'video.mp4',
+
           msg.id,
+
+
         ),
         child: Container(
           width: 220,
@@ -482,7 +485,9 @@ class _ChatScreenState extends State<ChatScreen> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(
+
             child: isOpeningMedia
+
                 ? const CircularProgressIndicator(color: Colors.white)
                 : const Column(
                     mainAxisSize: MainAxisSize.min,
@@ -509,6 +514,7 @@ class _ChatScreenState extends State<ChatScreen> {
         onTap: () => _openMedia(
           msg.mediaUrl!,
           msg.text.isNotEmpty ? msg.text : 'file',
+
           msg.id,
         ),
         child: Container(
@@ -520,7 +526,9 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           child: Row(
             children: [
+
               if (isOpeningMedia)
+              if (_openingMe
                 SizedBox(
                   width: 28,
                   height: 28,
