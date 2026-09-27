@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/chat_service.dart';
-import '../services/auth_service.dart';
 import '../models/chat.dart';
 import 'chat_screen.dart';
 import 'command_line_screen.dart';
-import 'proxy_settings_screen.dart';
 import 'profile_settings_screen.dart';
 import 'new_chat_screen.dart';
 import 'new_group_screen.dart';
@@ -29,19 +28,6 @@ class ChatListScreen extends StatelessWidget {
               context,
               MaterialPageRoute(builder: (context) => const ProfileSettingsScreen()),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.vpn_lock_outlined),
-            tooltip: 'Настройки прокси',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ProxySettingsScreen()),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Выйти',
-            onPressed: () => AuthService().logout(),
           ),
         ],
       ),
@@ -87,7 +73,7 @@ class ChatListScreen extends StatelessWidget {
                 leading: CircleAvatar(
                   backgroundColor: Color(chat.otherProfileColor),
                   backgroundImage: (!chat.isGroup && chat.otherAvatarUrl != null)
-                      ? NetworkImage(chat.otherAvatarUrl!)
+                      ? CachedNetworkImageProvider(chat.otherAvatarUrl!)
                       : null,
                   child: (!chat.isGroup && chat.otherAvatarUrl != null)
                       ? null
