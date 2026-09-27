@@ -159,12 +159,14 @@ class ChatService {
         .collection('chats')
         .doc(chatId)
         .collection('messages')
-        .where('senderId', isNotEqualTo: _myUid)
         .where('read', isEqualTo: false)
         .get();
 
     for (var doc in unread.docs) {
-      await doc.reference.update({'read': true});
+      final data = doc.data();
+      if (data['senderId'] != _myUid) {
+        await doc.reference.update({'read': true});
+      }
     }
   }
 
