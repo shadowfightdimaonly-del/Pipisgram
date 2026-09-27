@@ -11,15 +11,15 @@ class PushNotificationService {
   static const String _appId = 'a171af7d-69c0-40e1-85af-b4dfcbf67a01';
   static const String _apiUrl = 'https://onesignal.com/api/v1/notifications';
 
-  /// Отправляет пуш конкретному пользователю по его Firebase UID
-  /// (привязанному как External ID через OneSignal.login).
+  /// Отправляет пуш конкретному пользователю по его Firebase UID.
+  /// Firebase UID привязан к OneSignal через OneSignal.login().
   static Future<void> sendToUser({
     required String targetUid,
     required String title,
     required String body,
   }) async {
     try {
-      await http.post(
+      final response = await http.post(
         Uri.parse(_apiUrl),
         headers: {
           'Content-Type': 'application/json',
@@ -27,14 +27,20 @@ class PushNotificationService {
         },
         body: jsonEncode({
           'app_id': _appId,
-          'include_external_user_ids': [targetUid],
+          'include_aliases': {
+            'external_id': [targetUid],
+          },
+          'target_channel': 'push',
           'headings': {'en': title},
           'contents': {'en': body},
         }),
       );
-    } catch (e) {
-      // Push — не критичная функция, ошибку молча игнорируем,
-      // чтобы не мешать отправке самого сообщения
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        // OneSignal отклонил запрос. Не мешаем отправке сообщения.
+      }
+    } catch (_) {
+      // Push — не критичная функция.
     }
   }
 
@@ -49,7 +55,7 @@ class PushNotificationService {
     if (targets.isEmpty) return;
 
     try {
-      await http.post(
+      final response = await http.post(
         Uri.parse(_apiUrl),
         headers: {
           'Content-Type': 'application/json',
@@ -57,13 +63,20 @@ class PushNotificationService {
         },
         body: jsonEncode({
           'app_id': _appId,
-          'include_external_user_ids': targets,
+          'include_aliases': {
+            'external_id': targets,
+          },
+          'target_channel': 'push',
           'headings': {'en': title},
           'contents': {'en': body},
         }),
       );
-    } catch (e) {
-      // Push — не критичная функция, ошибку молча игнорируем
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        // OneSignal отклонил запрос. Не мешаем отправке сообщения.
+      }
+    } catch (_) {
+      // Push — не критичная функция.
     }
   }
 }
