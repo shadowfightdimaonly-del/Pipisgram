@@ -65,6 +65,24 @@ class ChatService {
           unreadCount: (data['unread_$_myUid'] ?? 0) as int,
         ));
       }
+
+      // Непрочитанные чаты всегда выше прочитанных.
+      // Среди непрочитанных сначала идут чаты с большим числом сообщений.
+      chats.sort((a, b) {
+        final aUnread = a.unreadCount > 0;
+        final bUnread = b.unreadCount > 0;
+
+        if (aUnread != bUnread) {
+          return aUnread ? -1 : 1;
+        }
+
+        if (aUnread && bUnread && a.unreadCount != b.unreadCount) {
+          return b.unreadCount.compareTo(a.unreadCount);
+        }
+
+        return b.lastMessageTime.compareTo(a.lastMessageTime);
+      });
+
       return chats;
     });
   }
@@ -170,6 +188,21 @@ class ChatService {
     }
   }
 
+  Future<void> _incrementUnreadForRecipients(String chatId) async {
+    final chatDoc = await _db.collection('chats').doc(chatId).get();
+    final chatData = chatDoc.data();
+    if (chatData == null) return;
+
+    final participants = List<String>.from(chatData['participants'] ?? []);
+    final recipients = participants.where((uid) => uid != _myUid);
+
+    for (final uid in recipients) {
+      await chatDoc.reference.update({
+        'unread_$uid': FieldValue.increment(1),
+      });
+    }
+  }
+
   Future<void> sendImageMessage(String chatId, String imageUrl) async {
     final msgRef = _db.collection('chats').doc(chatId).collection('messages');
     final now = DateTime.now();
@@ -191,6 +224,7 @@ class ChatService {
       'lastMessage': '📷 Фото',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
+    await _incrementUnreadForRecipients(chatId);
 
     final chatDoc = await _db.collection('chats').doc(chatId).get();
     final chatData = chatDoc.data();
@@ -247,6 +281,7 @@ class ChatService {
       'lastMessage': '🎥 Видео',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
+    await _incrementUnreadForRecipients(chatId);
 
     final chatDoc = await _db.collection('chats').doc(chatId).get();
     final chatData = chatDoc.data();
@@ -298,6 +333,7 @@ class ChatService {
       'lastMessage': '🎵 Аудио',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
+    await _incrementUnreadForRecipients(chatId);
 
     await _sendMediaNotification(chatId, myUsername, '🎵 Аудио', 'аудио');
   }
@@ -323,6 +359,7 @@ class ChatService {
       'lastMessage': '📎 $fileName',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
+    await _incrementUnreadForRecipients(chatId);
 
     await _sendMediaNotification(chatId, myUsername, '📎 $fileName', 'файл');
   }
@@ -379,6 +416,7 @@ class ChatService {
       'lastMessage': '😀 Эмодзи',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
+    await _incrementUnreadForRecipients(chatId);
   }
 
   Future<void> sendMessage(String chatId, String text) async {
@@ -403,6 +441,7 @@ class ChatService {
       'lastMessage': text,
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
+    await _incrementUnreadForRecipients(chatId);
 
     final chatDoc = await _db.collection('chats').doc(chatId).get();
     final chatData = chatDoc.data();
