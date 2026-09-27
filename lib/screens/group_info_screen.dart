@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/chat_service.dart';
@@ -35,6 +36,38 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
   }
 
   Future<void> _removeParticipant(String uid, String username) async {
+    final chatDoc = await _db.collection('chats').doc(widget.chatId).get();
+    final chatData = chatDoc.data();
+    final ownerUid = chatData?['createdBy'];
+
+    if (uid == ownerUid) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Владельца группы удалить нельзя')),
+        );
+      }
+      return;
+    }
+
+    final cooldownField = 'takeoverCooldownUntil_' + _myUid;
+    final cooldownValue = chatData?[cooldownField];
+    if (cooldownValue is Timestamp &&
+        cooldownValue.toDate().isAfter(DateTime.now())) {
+      final remaining = cooldownValue.toDate().difference(DateTime.now());
+      final minutes = remaining.inMinutes + 1;
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Подарок пока на перезарядке. Ещё примерно ' +
+              '$minutes мин.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -52,8 +85,14 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
         ],
       ),
     );
+
     if (confirmed == true) {
       await _chatService.removeParticipant(widget.chatId, uid);
+      await _db.collection('chats').doc(widget.chatId).update({
+        cooldownField: Timestamp.fromDate(
+          DateTime.now().add(const Duration(minutes: 10)),
+        ),
+      });
     }
   }
 
@@ -93,7 +132,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                     return ListTile(
                       leading: CircleAvatar(
                         backgroundImage: userData?['avatarUrl'] != null
-                            ? NetworkImage(userData!['avatarUrl'])
+                            ? CachedNetworkImageProvider(userData!['avatarUrl'])
                             : null,
                         child: userData?['avatarUrl'] == null
                             ? Text(username.isNotEmpty
