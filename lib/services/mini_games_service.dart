@@ -27,11 +27,24 @@ class MiniGamesService {
   }
 
   Future<int> registerClickerTap() async {
-    final current = await getClickerTapsToday();
-    if (current >= 1000) return current;
-    final newCount = current + 1;
-    await _saveTodayStats('clicker', {'taps': newCount});
-    return newCount;
+    final docId = '${_myUid}_clicker_$_today';
+    final ref = _db.collection('gameStats').doc(docId);
+
+    return _db.runTransaction<int>((transaction) async {
+      final snapshot = await transaction.get(ref);
+      final data = snapshot.data() ?? {};
+      final current = (data['taps'] ?? 0) as int;
+
+      if (current >= 1000) return current;
+
+      final newCount = current + 1;
+      transaction.set(
+        ref,
+        {'taps': newCount},
+        SetOptions(merge: true),
+      );
+      return newCount;
+    });
   }
 
   Future<void> cashOutClickerStars(int taps) async {
