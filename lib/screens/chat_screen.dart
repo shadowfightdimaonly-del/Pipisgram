@@ -65,6 +65,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _uploadingMedia = false;
   final List<_PendingUpload> _pendingUploads = [];
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+  final Set<String> _initialUnreadMessageIds = {};
 
   @override
   void initState() {
@@ -72,8 +73,30 @@ class _ChatScreenState extends State<ChatScreen> {
     _checkIfGroup();
     _checkEditRights();
     _loadBubbleStyles();
+    _captureUnreadMessages();
     _chatService.markMessagesAsRead(widget.chatId);
     _watchConnectivity();
+  }
+
+  Future<void> _captureUnreadMessages() async {
+    final snap = await FirebaseFirestore.instance
+        .collection('chats')
+        .doc(widget.chatId)
+        .collection('messages')
+        .where('read', isEqualTo: false)
+        .get();
+
+    if (!mounted) return;
+
+    setState(() {
+      _initialUnreadMessageIds
+        ..clear()
+        ..addAll(
+          snap.docs
+              .where((doc) => doc.data()['senderId'] != _myUid)
+              .map((doc) => doc.id),
+        );
+    });
   }
 
   void _watchConnectivity() {
@@ -761,7 +784,15 @@ class _ChatScreenState extends State<ChatScreen> {
                         _pendingUploads[index],
                       );
                     }
-                    final msg = messages[index - pendingCount];
+                    final messageIndex = index - pendingCount;
+                    final msg = messages[messageIndex];
+
+                    final isOldestInitialUnread =
+                        _initialUnreadMessageIds.contains(msg.id) &&
+                        !messages
+                            .skip(messageIndex + 1)
+                            .any((m) => _initialUnreadMessageIds.contains(m.id));
+
                     final isMine = msg.senderId == _myUid;
 final bubbleColor = isMine
     ? Theme.of(context).colorScheme.primary
@@ -794,100 +825,35 @@ final textColor = isMine
                       );
                     }
 
-                    return GestureDetector(
-                      onLongPress: () => _showMessageActions(msg),
-                      child: Align(
-                        alignment: isMine
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          constraints: BoxConstraints(
-                            maxWidth:
-                                MediaQuery.of(context).size.width * 0.75,
-                          ),
-                          decoration: BoxDecoration(
-                            color: bubbleColor,
-                            borderRadius: BorderRadius.circular(
-                              isMine ? _myBubbleRadius : _otherBubbleRadius,
-                            ),
-                            image: bubbleTexture != null
-                                ? DecorationImage(
-                                    image: NetworkImage(bubbleTexture),
-                                    fit: BoxFit.cover,
-                                    colorFilter: ColorFilter.mode(
-                                      Colors.black.withOpacity(0.15),
-                                      BlendMode.darken,
-                                    ),
-                                  )
-                                : null,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (_isGroup && !isMine)
+                    if (isOldestInitialUnread) {
+                      return Column(
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 10),
+                            child: Row(
+                              children: [
+                                Expanded(child: Divider()),
                                 Padding(
-                                  padding: const EdgeInsets.only(bottom: 2),
+                                  padding:
+                                      EdgeInsets.symmetric(horizontal: 10),
                                   child: Text(
-                                    '@${msg.senderUsername ?? "неизвестный"}',
+                                    'Не прочитано',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
-                              _buildMessageContent(msg, isMine),
-                              const SizedBox(height: 2),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (msg.edited)
-                                    Padding(
-                                      padding:
-                                          const EdgeInsets.only(right: 4),
-                                      child: Text(
-                                        'изменено',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontStyle: FontStyle.italic,
-                                          color: textColor.withOpacity(0.7),
-                                        ),
-                                      ),
-                                    ),
-                                  Text(
-                                    DateFormat('HH:mm').format(msg.timestamp),
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: textColor.withOpacity(0.7),
-                                    ),
-                                  ),
-                                  if (isMine) ...[
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      msg.read
-                                          ? Icons.done_all
-                                          : Icons.done,
-                                      size: 14,
-                                      color: msg.read
-                                          ? Colors.lightBlueAccent
-                                          : textColor.withOpacity(0.7),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ],
+                                Expanded(child: Divider()),
+                              ],
+                            ),
                           ),
-                        ),
-                      ),
-                    );
-                  },
+                          $original
+                        ],
+                      );
+                    }
+
+$original                  },
                 );
               },
             ),
