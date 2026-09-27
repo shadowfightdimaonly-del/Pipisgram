@@ -16,7 +16,7 @@ class FileUploadService {
       );
 
       final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 60),
+        const Duration(seconds: 25),
         onTimeout: () {
           throw TimeoutException('Загрузка заняла слишком много времени');
         },
