@@ -186,6 +186,10 @@ class ChatService {
         await doc.reference.update({'read': true});
       }
     }
+
+    await _db.collection('chats').doc(chatId).update({
+      'unread_$_myUid': 0,
+    });
   }
 
   Future<void> _incrementUnreadForRecipients(String chatId) async {
