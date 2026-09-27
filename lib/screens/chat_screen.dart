@@ -19,6 +19,22 @@ import 'group_info_screen.dart';
 import 'view_profile_screen.dart';
 import 'profile_settings_screen.dart';
 
+enum _UploadStatus { uploading, error }
+
+class _PendingUpload {
+  final String id;
+  final MessageType type;
+  final String fileName;
+  _UploadStatus status;
+
+  _PendingUpload({
+    required this.id,
+    required this.type,
+    required this.fileName,
+    this.status = _UploadStatus.uploading,
+  });
+}
+
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String otherUsername;
@@ -47,6 +63,7 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _otherBubbleTexture;
   bool _isOffline = false;
   bool _uploadingMedia = false;
+  final List<_PendingUpload> _pendingUploads = [];
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
   @override
@@ -157,72 +174,80 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  /// Общая загрузка видео/аудио/файла через Catbox с отдельным статусом
+  /// для каждой карточки (не блокирует остальной UI и другие отправки).
+  Future<void> _uploadAndSend({
+    required MessageType type,
+    required String filePath,
+    required String fileName,
+  }) async {
+    final id = '${DateTime.now().microsecondsSinceEpoch}';
+    final pending = _PendingUpload(id: id, type: type, fileName: fileName);
+
+    if (mounted) {
+      setState(() => _pendingUploads.insert(0, pending));
+    }
+
+    final url = await FileUploadService.uploadFile(filePath, fileName);
+
+    if (url == null) {
+      if (mounted) {
+        setState(() => pending.status = _UploadStatus.error);
+      }
+      return;
+    }
+
+    switch (type) {
+      case MessageType.video:
+        await _chatService.sendVideoMessage(widget.chatId, url, fileName);
+        break;
+      case MessageType.audio:
+        await _chatService.sendAudioMessage(widget.chatId, url);
+        break;
+      case MessageType.file:
+        await _chatService.sendFileMessage(widget.chatId, url, fileName);
+        break;
+      default:
+        break;
+    }
+
+    if (mounted) {
+      setState(() => _pendingUploads.removeWhere((p) => p.id == id));
+    }
+  }
+
   Future<void> _sendVideo() async {
     final picker = ImagePicker();
     final picked = await picker.pickVideo(source: ImageSource.gallery);
     if (picked == null) return;
 
-    setState(() => _uploadingMedia = true);
-    try {
-      final url = await FileUploadService.uploadFile(picked.path, picked.name);
-      if (url != null) {
-       await _chatService.sendVideoMessage(
-  widget.chatId,
-  url,
-  picked.name,
-);
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Не удалось загрузить видео')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _uploadingMedia = false);
-    }
+    _uploadAndSend(
+      type: MessageType.video,
+      filePath: picked.path,
+      fileName: picked.name,
+    );
   }
 
   Future<void> _sendAudio() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.audio);
     if (result == null || result.files.single.path == null) return;
 
-    final path = result.files.single.path!;
-    final name = result.files.single.name;
-    setState(() => _uploadingMedia = true);
-    try {
-      final url = await FileUploadService.uploadFile(path, name);
-      if (url != null) {
-        await _chatService.sendAudioMessage(widget.chatId, url);
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Не удалось загрузить аудио')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _uploadingMedia = false);
-    }
+    _uploadAndSend(
+      type: MessageType.audio,
+      filePath: result.files.single.path!,
+      fileName: result.files.single.name,
+    );
   }
 
   Future<void> _sendFile() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.any);
     if (result == null || result.files.single.path == null) return;
 
-    final path = result.files.single.path!;
-    final name = result.files.single.name;
-
-    setState(() => _uploadingMedia = true);
-
-    try {
-      final url = await FileUploadService.uploadFile(path, name);
-      if (url != null) {
-        await _chatService.sendFileMessage(widget.chatId, url, name);
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Не удалось загрузить файл')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _uploadingMedia = false);
-    }
+    _uploadAndSend(
+      type: MessageType.file,
+      filePath: result.files.single.path!,
+      fileName: result.files.single.name,
+    );
   }
 
   void _showEmojiPicker() {
@@ -433,6 +458,73 @@ class _ChatScreenState extends State<ChatScreen> {
             child: const Text('Сохранить'),
           ),
         ],
+      ),
+    );
+  }
+
+  String _pendingUploadLabel(MessageType type) {
+    switch (type) {
+      case MessageType.video:
+        return 'видео';
+      case MessageType.audio:
+        return 'аудио';
+      case MessageType.file:
+      default:
+        return 'файл';
+    }
+  }
+
+  Widget _buildPendingUploadBubble(_PendingUpload pending) {
+    final isError = pending.status == _UploadStatus.error;
+    final label = _pendingUploadLabel(pending.type);
+
+    return GestureDetector(
+      onTap: isError
+          ? () => setState(
+              () => _pendingUploads.removeWhere((p) => p.id == pending.id),
+            )
+          : null,
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
+          ),
+          decoration: BoxDecoration(
+            color: isError
+                ? Colors.red.withOpacity(0.15)
+                : Theme.of(context).colorScheme.primary.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(_myBubbleRadius),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isError)
+                const Icon(Icons.error_outline, color: Colors.red, size: 20)
+              else
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  isError
+                      ? 'Не удалось загрузить $label · нажми, чтобы убрать'
+                      : 'Загружается $label...',
+                  style: TextStyle(
+                    color: isError
+                        ? Colors.red
+                        : Theme.of(context).colorScheme.onPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -652,15 +744,21 @@ class _ChatScreenState extends State<ChatScreen> {
               stream: _chatService.messagesStream(widget.chatId),
               builder: (context, snapshot) {
                 final messages = snapshot.data ?? [];
-                if (messages.isEmpty) {
+                final pendingCount = _pendingUploads.length;
+                if (messages.isEmpty && pendingCount == 0) {
                   return const Center(child: Text('Сообщений пока нет'));
                 }
                 return ListView.builder(
                   reverse: true,
                   padding: const EdgeInsets.all(12),
-                  itemCount: messages.length,
+                  itemCount: pendingCount + messages.length,
                   itemBuilder: (context, index) {
-                    final msg = messages[index];
+                    if (index < pendingCount) {
+                      return _buildPendingUploadBubble(
+                        _pendingUploads[index],
+                      );
+                    }
+                    final msg = messages[index - pendingCount];
                     final isMine = msg.senderId == _myUid;
 final bubbleColor = isMine
     ? Theme.of(context).colorScheme.primary
