@@ -744,6 +744,9 @@ class _ChatScreenState extends State<ChatScreen> {
               stream: _chatService.messagesStream(widget.chatId),
               builder: (context, snapshot) {
                 final messages = snapshot.data ?? [];
+                if (snapshot.hasData && messages.isNotEmpty) {
+                  unawaited(_chatService.markMessagesAsRead(widget.chatId));
+                }
                 final pendingCount = _pendingUploads.length;
                 if (messages.isEmpty && pendingCount == 0) {
                   return const Center(child: Text('Сообщений пока нет'));
