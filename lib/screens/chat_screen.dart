@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -816,7 +817,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             return CircleAvatar(
                               radius: 18,
                               backgroundImage: avatarUrl != null
-                                  ? NetworkImage(avatarUrl)
+                                  ? CachedNetworkImageProvider(avatarUrl)
                                   : null,
                               child: avatarUrl == null
                                   ? Text(widget.otherUsername.isNotEmpty
