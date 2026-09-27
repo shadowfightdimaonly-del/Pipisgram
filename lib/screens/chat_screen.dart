@@ -940,8 +940,7 @@ final textColor = isMine
                           ),
                         ),
                       ),
-                    );
-
+                    )
                         ],
                       );
                     }
