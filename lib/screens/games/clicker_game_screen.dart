@@ -15,6 +15,8 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
   int _tapsThisSession = 0;
   bool _loading = true;
   bool _cashingOut = false;
+  DateTime _lastTapAt = DateTime.fromMillisecondsSinceEpoch(0);
+  static const _tapCooldown = Duration(milliseconds: 700);
   late AnimationController _bounceCtrl;
 
   @override
@@ -51,6 +53,11 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
 
   Future<void> _tap() async {
     if (_tapsToday >= 1000) return;
+
+    final now = DateTime.now();
+    if (now.difference(_lastTapAt) < _tapCooldown) return;
+    _lastTapAt = now;
+
     _bounceCtrl.reverse().then((_) => _bounceCtrl.forward());
     // Оптимистично увеличиваем счётчик сразу, чтобы тап ощущался мгновенно
     setState(() => _tapsThisSession++);
