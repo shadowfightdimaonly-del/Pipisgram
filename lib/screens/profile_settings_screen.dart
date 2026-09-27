@@ -651,41 +651,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       value: _showOnlineStatus,
                       onChanged: _toggleOnlineStatus,
                     ),
-                    const Divider(height: 32),
-                    ListTile(
-                      leading: const Icon(Icons.logout, color: Colors.red),
-                      title: const Text(
-                        'Выйти из аккаунта',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                      onTap: () async {
-                        final confirmed = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Выйти из аккаунта?'),
-                            content: const Text(
-                              'Текущая сессия на этом устройстве будет завершена.',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Отмена'),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text(
-                                  'Выйти',
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (confirmed == true) {
-                          await AuthService().logout();
-                        }
-                      },
-                    ),
                     if (hasAnyGift) ...[
                       const Divider(height: 32),
                       const Padding(
@@ -753,6 +718,41 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         ),
                       ],
                     ],
+                    const Divider(height: 32),
+                    ListTile(
+                      leading: const Icon(Icons.logout, color: Colors.red),
+                      title: const Text(
+                        'Выйти из аккаунта',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      onTap: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Выйти из аккаунта?'),
+                            content: const Text(
+                              'Текущая сессия на этом устройстве будет завершена.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Отмена'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text(
+                                  'Выйти',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed == true) {
+                          await AuthService().logout();
+                        }
+                      },
+                    ),
                   ]),
                 ),
               ],
