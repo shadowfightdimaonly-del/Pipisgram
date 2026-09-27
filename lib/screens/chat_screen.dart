@@ -938,103 +938,23 @@ final textColor = isMine
                               ],
                             ),
                           ),
-                          _buildMessageBubble(msg, isMine, bubbleColor, bubbleTexture, textColor),
+                          _buildMessageBubble(
+                            msg,
+                            isMine,
+                            bubbleColor,
+                            bubbleTexture,
+                            textColor,
+                          ),
                         ],
                       );
                     }
 
-                    return _buildMessageBubble(msg, isMine, bubbleColor, bubbleTexture, textColor);
-                      onLongPress: () => _showMessageActions(msg),
-                      child: Align(
-                        alignment: isMine
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          constraints: BoxConstraints(
-                            maxWidth:
-                                MediaQuery.of(context).size.width * 0.75,
-                          ),
-                          decoration: BoxDecoration(
-                            color: bubbleColor,
-                            borderRadius: BorderRadius.circular(
-                              isMine ? _myBubbleRadius : _otherBubbleRadius,
-                            ),
-                            image: bubbleTexture != null
-                                ? DecorationImage(
-                                    image: NetworkImage(bubbleTexture),
-                                    fit: BoxFit.cover,
-                                    colorFilter: ColorFilter.mode(
-                                      Colors.black.withOpacity(0.15),
-                                      BlendMode.darken,
-                                    ),
-                                  )
-                                : null,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (_isGroup && !isMine)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 2),
-                                  child: Text(
-                                    '@${msg.senderUsername ?? "неизвестный"}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
-                                    ),
-                                  ),
-                                ),
-                              _buildMessageContent(msg, isMine),
-                              const SizedBox(height: 2),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (msg.edited)
-                                    Padding(
-                                      padding:
-                                          const EdgeInsets.only(right: 4),
-                                      child: Text(
-                                        'изменено',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontStyle: FontStyle.italic,
-                                          color: textColor.withOpacity(0.7),
-                                        ),
-                                      ),
-                                    ),
-                                  Text(
-                                    DateFormat('HH:mm').format(msg.timestamp),
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: textColor.withOpacity(0.7),
-                                    ),
-                                  ),
-                                  if (isMine) ...[
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      msg.read
-                                          ? Icons.done_all
-                                          : Icons.done,
-                                      size: 14,
-                                      color: msg.read
-                                          ? Colors.lightBlueAccent
-                                          : textColor.withOpacity(0.7),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    return _buildMessageBubble(
+                      msg,
+                      isMine,
+                      bubbleColor,
+                      bubbleTexture,
+                      textColor,
                     );
                   },
                 );
