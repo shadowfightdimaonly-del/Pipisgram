@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/chat_service.dart';
@@ -108,7 +110,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                         radius: 48,
                         backgroundColor: profileColor,
                         backgroundImage:
-                            avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                            avatarUrl != null ? CachedNetworkImageProvider(avatarUrl) : null,
                         child: avatarUrl == null
                             ? Text(
                                 username.isNotEmpty
@@ -173,9 +175,51 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
               ),
               const SizedBox(height: 4),
               Center(
-                child: Text(
-                  'код: ${data?['userCode'] ?? '—'}',
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                child: Builder(
+                  builder: (context) {
+                    final userCode = data?['userCode'] ?? '—';
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: userCode == '—'
+                          ? null
+                          : () async {
+                              await Clipboard.setData(
+                                ClipboardData(text: userCode),
+                              );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Код скопирован'),
+                                  ),
+                                );
+                              }
+                            },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'код: $userCode',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.copy_outlined,
+                              size: 14,
+                              color: Colors.grey,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
               if (visibleGifts.isNotEmpty) ...[
