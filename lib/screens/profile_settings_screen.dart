@@ -1,9 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/image_upload_service.dart';
+import '../services/auth_service.dart';
+import 'proxy_settings_screen.dart';
 import 'custom_emoji_screen.dart';
 
 const List<Map<String, dynamic>> bubbleStyles = [
@@ -275,7 +279,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                     radius: 48,
                                     backgroundColor: Colors.white,
                                     backgroundImage: _avatarUrl != null
-                                        ? NetworkImage(_avatarUrl!)
+                                        ? CachedNetworkImageProvider(_avatarUrl!)
                                         : null,
                                     child: _avatarUrl == null
                                         ? Text(
@@ -606,11 +610,39 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 ],
                               ),
                             ),
+                            IconButton(
+                              tooltip: 'Скопировать код',
+                              icon: const Icon(Icons.copy_outlined),
+                              onPressed: () async {
+                                await Clipboard.setData(
+                                  ClipboardData(text: _userCode),
+                                );
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Код скопирован'),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
                           ],
                         ),
                       ),
                     ),
                     const Divider(height: 32),
+                    ListTile(
+                      leading: const Icon(Icons.vpn_lock_outlined),
+                      title: const Text('Настройки прокси'),
+                      subtitle: const Text('SOCKS5'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProxySettingsScreen(),
+                        ),
+                      ),
+                    ),
                     SwitchListTile(
                       title: const Text('Показывать статус "в сети"'),
                       subtitle: const Text(
@@ -618,6 +650,41 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       ),
                       value: _showOnlineStatus,
                       onChanged: _toggleOnlineStatus,
+                    ),
+                    const Divider(height: 32),
+                    ListTile(
+                      leading: const Icon(Icons.logout, color: Colors.red),
+                      title: const Text(
+                        'Выйти из аккаунта',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      onTap: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Выйти из аккаунта?'),
+                            content: const Text(
+                              'Текущая сессия на этом устройстве будет завершена.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Отмена'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text(
+                                  'Выйти',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed == true) {
+                          await AuthService().logout();
+                        }
+                      },
                     ),
                     if (hasAnyGift) ...[
                       const Divider(height: 32),
