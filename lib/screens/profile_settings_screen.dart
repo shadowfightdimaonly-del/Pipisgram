@@ -10,6 +10,7 @@ import '../services/auth_service.dart';
 import 'proxy_settings_screen.dart';
 import 'custom_emoji_screen.dart';
 import 'message_bubble_appearance_screen.dart';
+import 'admin_panel_screen.dart';
 
 const List<Map<String, dynamic>> bubbleStyles = [
   {'id': 'rounded', 'name': 'Круглые', 'radius': 16.0},
@@ -739,6 +740,21 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           onChanged: _toggleShowTakeoverGift,
                         ),
                       ],
+                    ],
+                    if (_isAdmin) ...[
+                      const Divider(height: 32),
+                      ListTile(
+                        leading: const Icon(Icons.admin_panel_settings_outlined),
+                        title: const Text('Панель администратора'),
+                        subtitle: const Text('Поиск пользователей и модерация'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminPanelScreen(),
+                          ),
+                        ),
+                      ),
                     ],
                     const Divider(height: 32),
                     ListTile(
