@@ -122,10 +122,43 @@ class _TicketViewState extends State<TicketView> {
                 onSelected: (v) async {
                   if (v == 'finish') await finish();
                   if (v == 'reopen') await s.reopen(widget.id);
+                  if (v == 'warn' || v == 'block24' || v == 'blockPermanent' || v == 'unblock') {
+                    final ownerUid = snap.data?.data()?['ownerUid']?.toString();
+                    if (ownerUid == null || ownerUid.isEmpty) return;
+                    try {
+                      if (v == 'warn') {
+                        await s.warnUser(ownerUid, 'Нарушение правил поддержки');
+                      } else if (v == 'block24') {
+                        await s.blockUser(ownerUid, reason: 'Нарушение правил поддержки', hours: 24);
+                      } else if (v == 'blockPermanent') {
+                        await s.blockUser(ownerUid, reason: 'Систематические или серьёзные нарушения', permanent: true);
+                      } else {
+                        await s.unblockUser(ownerUid);
+                      }
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Модерация применена')),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('$e')),
+                        );
+                      }
+                    }
+                  }
                 },
                 itemBuilder: (_) => [
                   if (open) const PopupMenuItem(value: 'finish', child: Text('Закрыть')),
                   if (!open) const PopupMenuItem(value: 'reopen', child: Text('Открыть снова')),
+                  if (widget.admin) ...[
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(value: 'warn', child: Text('Предупредить')),
+                    const PopupMenuItem(value: 'block24', child: Text('Заблокировать на 24 часа')),
+                    const PopupMenuItem(value: 'blockPermanent', child: Text('Заблокировать навсегда')),
+                    const PopupMenuItem(value: 'unblock', child: Text('Снять блокировку')),
+                  ],
                 ],
               );
             },
