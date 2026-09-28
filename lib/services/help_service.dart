@@ -63,6 +63,31 @@ class HelpService {
     return data;
   }
 
+  Future<void> submitBlockAppeal(String email, String text) async {
+    final response = await http.post(
+      Uri.parse('$_workerUrl/support/appeal'),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'email': email.trim(),
+        'text': text.trim(),
+      }),
+    );
+
+    Map<String, dynamic> data = {};
+    try {
+      data = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {}
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        data['error']?.toString() ??
+            'Не удалось отправить обращение: ${response.statusCode}',
+      );
+    }
+  }
+
   Stream<QuerySnapshot<Map<String, dynamic>>> mine() {
     return db.collection('tickets')
         .where('ownerUid', isEqualTo: uid)
