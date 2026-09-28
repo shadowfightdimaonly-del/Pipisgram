@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+
+import '../services/image_upload_service.dart';
 
 import 'profile_settings_screen.dart';
 
@@ -31,6 +35,8 @@ class _MessageBubbleAppearanceScreenState
   int _timeColor = 0xB3FFFFFF;
   int _checkColor = 0xFF81D4FA;
   String _decoration = 'none';
+  String? _bubbleImageUrl;
+  bool _uploadingBubbleImage = false;
 
   static const _colors = <Color>[
     Color(0xFF2AABEE), Color(0xFFE53935), Color(0xFFFB8C00),
@@ -72,6 +78,7 @@ class _MessageBubbleAppearanceScreenState
       _timeColor = (data['bubbleTimeColor'] ?? 0xB3FFFFFF) as int;
       _checkColor = (data['bubbleCheckColor'] ?? 0xFF81D4FA) as int;
       _decoration = data['bubbleDecoration'] ?? 'none';
+      _bubbleImageUrl = data['bubbleImageUrl']?.toString();
       _loading = false;
     });
   }
@@ -99,6 +106,44 @@ class _MessageBubbleAppearanceScreenState
       if (item['id'] == _decoration) return item['icon'] as IconData?;
     }
     return null;
+  }
+
+  Future<void> _pickBubbleImage() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      imageQuality: 90,
+    );
+    if (picked == null) return;
+
+    setState(() => _uploadingBubbleImage = true);
+    try {
+      final bytes = await File(picked.path).readAsBytes();
+      final url = await ImageUploadService.uploadImage(bytes);
+      if (url == null) {
+        throw Exception('Не удалось загрузить изображение');
+      }
+      await _save('bubbleImageUrl', url);
+      if (mounted) {
+        setState(() => _bubbleImageUrl = url);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Изображение облачка загружено')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingBubbleImage = false);
+    }
+  }
+
+  Future<void> _removeBubbleImage() async {
+    await _save('bubbleImageUrl', FieldValue.delete());
+    if (mounted) setState(() => _bubbleImageUrl = null);
   }
 
   Widget _colorPicker({
@@ -163,12 +208,18 @@ class _MessageBubbleAppearanceScreenState
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   color: baseColor.withOpacity(_opacity),
-                  gradient: _gradientEnabled
+                  gradient: _bubbleImageUrl == null && _gradientEnabled
                       ? LinearGradient(colors: [
                           baseColor.withOpacity(_opacity),
                           Color(_gradientColor).withOpacity(_opacity),
                         ])
                       : null,
+                  image: _bubbleImageUrl == null
+                      ? null
+                      : DecorationImage(
+                          image: NetworkImage(_bubbleImageUrl!),
+                          fit: BoxFit.fill,
+                        ),
                   borderRadius: BorderRadius.circular(radius),
                   border: _borderEnabled
                       ? Border.all(color: Color(_borderColor), width: _borderWidth)
@@ -207,6 +258,58 @@ class _MessageBubbleAppearanceScreenState
                       ),
                   ],
                 ),
+              ),
+            ),
+          ),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Изображение облачка',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  if (_bubbleImageUrl != null)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        _bubbleImageUrl!,
+                        height: 100,
+                        width: double.infinity,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: _uploadingBubbleImage ? null : _pickBubbleImage,
+                        icon: _uploadingBubbleImage
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.photo_library_outlined),
+                        label: Text(
+                          _bubbleImageUrl == null
+                              ? 'Загрузить из галереи'
+                              : 'Заменить из галереи',
+                        ),
+                      ),
+                      if (_bubbleImageUrl != null)
+                        OutlinedButton.icon(
+                          onPressed: _removeBubbleImage,
+                          icon: const Icon(Icons.delete_outline),
+                          label: const Text('Убрать'),
+                        ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
