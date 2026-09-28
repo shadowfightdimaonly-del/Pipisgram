@@ -12,7 +12,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
     with SingleTickerProviderStateMixin {
   final _service = MiniGamesService();
   int _tapsToday = 0;
-  int _tapsThisSession = 0;
+  int _availableTaps = 0;
   bool _loading = true;
   bool _cashingOut = false;
   DateTime _lastTapAt = DateTime.fromMillisecondsSinceEpoch(0);
@@ -40,9 +40,11 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
   Future<void> _loadTaps() async {
     try {
       final taps = await _service.getClickerTapsToday();
+      final available = await _service.getClickerAvailableTaps();
       if (mounted) {
         setState(() {
           _tapsToday = taps;
+          _availableTaps = available;
           _loading = false;
         });
       }
@@ -59,30 +61,36 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
     _lastTapAt = now;
 
     _bounceCtrl.reverse().then((_) => _bounceCtrl.forward());
-    // Оптимистично увеличиваем счётчик сразу, чтобы тап ощущался мгновенно
-    setState(() => _tapsThisSession++);
     try {
       final newCount = await _service.registerClickerTap();
-      if (mounted) setState(() => _tapsToday = newCount);
+      if (mounted) {
+        setState(() {
+          _tapsToday = newCount;
+          _availableTaps++;
+        });
+      }
     } catch (e) {
-      // Если сервер не подтвердил тап — откатываем сессионный счётчик,
-      // чтобы не показывать звёзды, которые реально не засчитались
-      if (mounted) setState(() => _tapsThisSession--);
+      // Сервер не подтвердил тап.
     }
   }
 
   Future<void> _cashOut() async {
-    if (_tapsThisSession == 0 || _cashingOut) return;
+    if (_availableTaps == 0 || _cashingOut) return;
     setState(() => _cashingOut = true);
 
-    final earned = (_tapsThisSession * 0.3).floor();
     try {
-      await _service.cashOutClickerStars(_tapsThisSession);
+      final earned = await _service.cashOutClickerStars();
       if (mounted) {
         setState(() {
-          _tapsThisSession = 0;
+          _availableTaps = 0;
           _cashingOut = false;
         });
+        if (earned <= 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Пока недостаточно тапов для вывода')),
+          );
+          return;
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -113,7 +121,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
   @override
   Widget build(BuildContext context) {
     final limitReached = _tapsToday >= 1000;
-    final sessionStars = (_tapsThisSession * 0.3).floor();
+    final availableStars = (_availableTaps * 3) ~/ 10;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Кликер')),
@@ -129,7 +137,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
                           style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 4),
                       Text(
-                          'Накоплено с последнего вывода: $_tapsThisSession тапов = $sessionStars★',
+                          'Доступно к выводу: $_availableTaps тапов = $availableStars★',
                           style: const TextStyle(color: Colors.grey)),
                     ],
                   ),
@@ -177,7 +185,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: FilledButton.icon(
-                    onPressed: (_tapsThisSession > 0 && !_cashingOut)
+                    onPressed: (_availableTaps > 0 && !_cashingOut)
                         ? _cashOut
                         : null,
                     icon: _cashingOut
@@ -189,7 +197,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
                           )
                         : const Icon(Icons.stars),
                     label: Text(
-                        _cashingOut ? 'Забираем...' : 'Забрать $sessionStars★'),
+                        _cashingOut ? 'Забираем...' : 'Забрать $availableStars★'),
                   ),
                 ),
               ],
