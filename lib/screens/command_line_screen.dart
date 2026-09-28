@@ -6,7 +6,6 @@ import 'chat_screen.dart';
 import '../services/chat_service.dart';
 import '../services/push_notification_service.dart';
 
-const String _adminPassword = 'admin_status_pipisgram_19873';
 const int _premiumPrice = 750;
 const String _supportUserCode = '80930';
 const Map<String, Map<String, dynamic>> _gifts = {
@@ -100,13 +99,6 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
     final cmd = raw.trim();
     if (cmd.isEmpty) return;
     _print('\$ ${cmd.length > 30 ? "••••• (скрыто)" : cmd}');
-
-    if (cmd == _adminPassword) {
-      await _db.collection('users').doc(_myUid).update({'isAdmin': true});
-      _print('доступ администратора предоставлен');
-      _inputCtrl.clear();
-      return;
-    }
 
     final lowerCmd = cmd.toLowerCase();
     if (_promoCodes.containsKey(lowerCmd)) {
