@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/help_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -49,6 +50,104 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       );
+    }
+  }
+
+  Future<void> _showBlockAppealDialog() async {
+    final reasonCtrl = TextEditingController();
+
+    try {
+      final result = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) {
+          bool sending = false;
+
+          return StatefulBuilder(
+            builder: (context, setDialogState) {
+              return AlertDialog(
+                title: const Text('Обжаловать блокировку'),
+                content: TextField(
+                  controller: reasonCtrl,
+                  maxLines: 6,
+                  maxLength: 3000,
+                  enabled: !sending,
+                  decoration: const InputDecoration(
+                    labelText: 'Опиши, почему блокировка ошибочна',
+                    hintText: 'Что произошло?',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: sending
+                        ? null
+                        : () => Navigator.of(dialogContext).pop(),
+                    child: const Text('Отмена'),
+                  ),
+                  FilledButton(
+                    onPressed: sending
+                        ? null
+                        : () async {
+                            final text = reasonCtrl.text.trim();
+                            if (text.isEmpty) return;
+
+                            setDialogState(() => sending = true);
+
+                            try {
+                              await HelpService().submitBlockAppeal(
+                                _emailCtrl.text.trim(),
+                                text,
+                              );
+                              if (dialogContext.mounted) {
+                                Navigator.of(dialogContext).pop('ok');
+                              }
+                            } catch (e) {
+                              if (dialogContext.mounted) {
+                                ScaffoldMessenger.of(dialogContext)
+                                    .showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      e.toString().replaceFirst(
+                                            'Exception: ',
+                                            '',
+                                          ),
+                                    ),
+                                  ),
+                                );
+                                setDialogState(() => sending = false);
+                              }
+                            }
+                          },
+                    child: sending
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text('Отправить'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      if (!mounted) return;
+
+      if (result == 'ok') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Апелляция отправлена. Администратор рассмотрит обращение.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      reasonCtrl.dispose();
     }
   }
 
@@ -132,6 +231,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 if (_error != null) ...[
                   const SizedBox(height: 12),
                   Text(_error!, style: const TextStyle(color: Colors.red)),
+                  if (!_isRegister && _error!.contains('заблокирован'))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: OutlinedButton.icon(
+                        onPressed: _loading
+                            ? null
+                            : _showBlockAppealDialog,
+                        icon: const Icon(Icons.support_agent),
+                        label: const Text('Обжаловать блокировку'),
+                      ),
+                    ),
                 ],
                 const SizedBox(height: 20),
                 FilledButton(
