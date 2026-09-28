@@ -1,15 +1,72 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 
 class HelpService {
+  static const _workerUrl =
+      'https://pipisgram-media.burmaldat199.workers.dev';
+
   final db = FirebaseFirestore.instance;
   final auth = FirebaseAuth.instance;
 
   String get uid => auth.currentUser!.uid;
 
+  Future<Map<String, dynamic>> _action(
+    String action, {
+    String? ticketId,
+    String? subject,
+    String? text,
+    String? reason,
+    String? targetUid,
+    String? mode,
+    int? hours,
+  }) async {
+    final user = auth.currentUser;
+    if (user == null) throw Exception('Пользователь не авторизован');
+
+    final token = await user.getIdToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Не удалось получить Firebase ID token');
+    }
+
+    final response = await http.post(
+      Uri.parse('$_workerUrl/support/action'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'action': action,
+        if (ticketId != null) 'ticketId': ticketId,
+        if (subject != null) 'subject': subject,
+        if (text != null) 'text': text,
+        if (reason != null) 'reason': reason,
+        if (targetUid != null) 'targetUid': targetUid,
+        if (mode != null) 'mode': mode,
+        if (hours != null) 'hours': hours,
+      }),
+    );
+
+    Map<String, dynamic> data = {};
+    try {
+      data = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {}
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        data['error']?.toString() ??
+            'Support action failed: ${response.statusCode}',
+      );
+    }
+
+    return data;
+  }
+
   Stream<QuerySnapshot<Map<String, dynamic>>> mine() {
     return db.collection('tickets')
         .where('ownerUid', isEqualTo: uid)
+        .orderBy('updatedAt', descending: true)
         .snapshots();
   }
 
@@ -25,53 +82,65 @@ class HelpService {
   }
 
   Future<String> create(String subject, String text) async {
-    final ref = db.collection('tickets').doc();
-    final now = FieldValue.serverTimestamp();
-    await ref.set({
-      'ownerUid': uid,
-      'subject': subject.trim(),
-      'status': 'open',
-      'createdAt': now,
-      'updatedAt': now,
-      'lastMessage': text.trim(),
-    });
-    await ref.collection('messages').add({
-      'senderUid': uid,
-      'text': text.trim(),
-      'createdAt': now,
-    });
-    return ref.id;
+    final data = await _action(
+      'create_ticket',
+      subject: subject.trim(),
+      text: text.trim(),
+    );
+    return data['ticketId'].toString();
   }
 
   Future<void> send(String id, String text) async {
-    final ref = db.collection('tickets').doc(id);
-    final doc = await ref.get();
-    if (doc.data()?['status'] == 'closed') throw Exception('Тикет закрыт');
-    await ref.collection('messages').add({
-      'senderUid': uid,
-      'text': text.trim(),
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-    await ref.update({
-      'updatedAt': FieldValue.serverTimestamp(),
-      'lastMessage': text.trim(),
-    });
+    await _action(
+      'send_message',
+      ticketId: id,
+      text: text.trim(),
+    );
   }
 
   Future<void> close(String id, String reason) async {
-    await db.collection('tickets').doc(id).update({
-      'status': 'closed',
-      'closedReason': reason,
-      'closedBy': uid,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await _action(
+      'close_ticket',
+      ticketId: id,
+      reason: reason,
+    );
   }
 
   Future<void> reopen(String id) async {
-    await db.collection('tickets').doc(id).update({
-      'status': 'open',
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await _action(
+      'reopen_ticket',
+      ticketId: id,
+    );
+  }
+
+  Future<void> warnUser(String targetUid, String reason) async {
+    await _action(
+      'warn_user',
+      targetUid: targetUid,
+      reason: reason,
+    );
+  }
+
+  Future<void> blockUser(
+    String targetUid, {
+    required String reason,
+    int hours = 24,
+    bool permanent = false,
+  }) async {
+    await _action(
+      'block_user',
+      targetUid: targetUid,
+      reason: reason,
+      hours: hours,
+      mode: permanent ? 'permanent' : 'temporary',
+    );
+  }
+
+  Future<void> unblockUser(String targetUid) async {
+    await _action(
+      'unblock_user',
+      targetUid: targetUid,
+    );
   }
 
   Future<bool> admin() async {
