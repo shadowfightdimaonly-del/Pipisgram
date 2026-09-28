@@ -13,14 +13,26 @@ service cloud.firestore {
         && request.auth.uid == userId
         && !request.resource.data.keys().hasAny([
           'isAdmin',
-          'shadowStars'
+          'shadowStars',
+          'supportWarnings',
+          'lastSupportWarning',
+          'lastSupportActionAt',
+          'supportBlockReason',
+          'supportBlockedUntil',
+          'accountPermanentlyBlocked'
         ]);
 
       allow update: if request.auth != null
         && request.auth.uid == userId
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
           'isAdmin',
-          'shadowStars'
+          'shadowStars',
+          'supportWarnings',
+          'lastSupportWarning',
+          'lastSupportActionAt',
+          'supportBlockReason',
+          'supportBlockedUntil',
+          'accountPermanentlyBlocked'
         ]);
 
       allow delete: if false;
@@ -52,14 +64,7 @@ service cloud.firestore {
           resource.data.ownerUid == request.auth.uid
           || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
         );
-      allow create: if request.auth != null
-        && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.status == 'open';
-      allow update: if request.auth != null
-        && (
-          resource.data.ownerUid == request.auth.uid
-          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
-        );
+      allow create, update, delete: if false;
 
       match /messages/{messageId} {
         allow read: if request.auth != null
@@ -67,12 +72,7 @@ service cloud.firestore {
             get(/databases/$(database)/documents/tickets/$(ticketId)).data.ownerUid == request.auth.uid
             || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
           );
-        allow create: if request.auth != null
-          && (
-            get(/databases/$(database)/documents/tickets/$(ticketId)).data.ownerUid == request.auth.uid
-            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
-          );
-        allow update, delete: if false;
+        allow create, update, delete: if false;
       }
     }
   }
