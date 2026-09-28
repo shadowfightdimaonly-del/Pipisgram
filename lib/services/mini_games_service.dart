@@ -153,11 +153,31 @@ class MiniGamesService {
   }
 
 
-  Future<void> cashOutDinoStars(int jumps) async {
-    final wholeStars = (jumps * 0.5).floor();
-    if (wholeStars <= 0) return;
-    await _db.collection('users').doc(_myUid).update({
-      'shadowStars': FieldValue.increment(wholeStars),
-    });
+  Future<int> cashOutDinoStars(int jumps) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('Пользователь не авторизован');
+    }
+
+    final token = await user.getIdToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Не удалось получить Firebase ID token');
+    }
+
+    final response = await http.post(
+      Uri.parse('$_workerUrl/economy/dino/cashout'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'jumps': jumps}),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Dino cashout failed: ${response.statusCode}');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return (data['stars'] as num?)?.toInt() ?? 0;
   }
 }
