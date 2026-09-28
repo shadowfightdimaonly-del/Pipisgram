@@ -1,7 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class MiniGamesService {
+  static const _workerUrl = 'https://pipisgram-media.burmaldat199.workers.dev';
+
   final _db = FirebaseFirestore.instance;
   final _myUid = FirebaseAuth.instance.currentUser!.uid;
 
@@ -27,24 +31,31 @@ class MiniGamesService {
   }
 
   Future<int> registerClickerTap() async {
-    final docId = '${_myUid}_clicker_$_today';
-    final ref = _db.collection('gameStats').doc(docId);
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('Пользователь не авторизован');
+    }
 
-    return _db.runTransaction<int>((transaction) async {
-      final snapshot = await transaction.get(ref);
-      final data = snapshot.data() ?? {};
-      final current = (data['taps'] ?? 0) as int;
+    final token = await user.getIdToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Не удалось получить Firebase ID token');
+    }
 
-      if (current >= 1000) return current;
+    final response = await http.post(
+      Uri.parse('$_workerUrl/economy/clicker/tap'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'date': _today}),
+    );
 
-      final newCount = current + 1;
-      transaction.set(
-        ref,
-        {'taps': newCount},
-        SetOptions(merge: true),
-      );
-      return newCount;
-    });
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Clicker tap failed: ${response.statusCode}');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return (data['taps'] as num?)?.toInt() ?? 0;
   }
 
   Future<int> getClickerAvailableTaps() async {
@@ -56,37 +67,31 @@ class MiniGamesService {
   }
 
   Future<int> cashOutClickerStars() async {
-    final gameRef = _db
-        .collection('gameStats')
-        .doc('${_myUid}_clicker_$_today');
-    final userRef = _db.collection('users').doc(_myUid);
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('Пользователь не авторизован');
+    }
 
-    return _db.runTransaction<int>((transaction) async {
-      final gameSnapshot = await transaction.get(gameRef);
-      final gameData = gameSnapshot.data() ?? {};
+    final token = await user.getIdToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Не удалось получить Firebase ID token');
+    }
 
-      final taps = ((gameData['taps'] ?? 0) as num).toInt().clamp(0, 1000);
-      final cashedOutTaps =
-          ((gameData['cashedOutTaps'] ?? 0) as num).toInt().clamp(0, taps);
+    final response = await http.post(
+      Uri.parse('$_workerUrl/economy/clicker/cashout'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'date': _today}),
+    );
 
-      final availableTaps = taps - cashedOutTaps;
-      final wholeStars = (availableTaps * 3) ~/ 10;
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Clicker cashout failed: ${response.statusCode}');
+    }
 
-      if (wholeStars <= 0) return 0;
-
-      final tapsToCashOut = wholeStars * 10 ~/ 3;
-
-      transaction.update(userRef, {
-        'shadowStars': FieldValue.increment(wholeStars),
-      });
-      transaction.set(
-        gameRef,
-        {'cashedOutTaps': cashedOutTaps + tapsToCashOut},
-        SetOptions(merge: true),
-      );
-
-      return wholeStars;
-    });
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return (data['stars'] as num?)?.toInt() ?? 0;
   }
   Future<int> getGuessAttemptsLeft() async {
     final stats = await _getTodayStats('guess');
