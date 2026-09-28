@@ -74,9 +74,14 @@ class _ChatScreenState extends State<ChatScreen> {
     _checkIfGroup();
     _checkEditRights();
     _loadBubbleStyles();
-    _captureUnreadMessages();
-    _chatService.markMessagesAsRead(widget.chatId);
+    _initializeReadState();
     _watchConnectivity();
+  }
+
+  Future<void> _initializeReadState() async {
+    await _captureUnreadMessages();
+    if (!mounted) return;
+    await _chatService.markMessagesAsRead(widget.chatId);
   }
 
   Future<void> _captureUnreadMessages() async {
