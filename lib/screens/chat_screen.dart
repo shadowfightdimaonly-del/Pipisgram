@@ -845,7 +845,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             final data =
                                 snap.data?.data() as Map<String, dynamic>?;
                             final avatarUrl = data?['avatarUrl'];
-                    final isAdmin = data?['isAdmin'] == true;
+                            final isAdmin = data?['isAdmin'] == true;
                             return CircleAvatar(
                               radius: 18,
                               backgroundImage: avatarUrl != null
@@ -865,19 +865,32 @@ class _ChatScreenState extends State<ChatScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Flexible(child: Text(widget.otherUsername)),
-                              if (isAdmin) ...[
-                                const SizedBox(width: 4),
-                                const Icon(
-                                  Icons.verified,
-                                  color: Colors.lightBlueAccent,
-                                  size: 16,
-                                ),
-                              ],
-                            ],
+                          StreamBuilder<DocumentSnapshot>(
+                            stream: widget.otherUid != null
+                                ? FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(widget.otherUid)
+                                    .snapshots()
+                                : null,
+                            builder: (context, snap) {
+                              final data =
+                                  snap.data?.data() as Map<String, dynamic>?;
+                              final isAdmin = data?['isAdmin'] == true;
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(child: Text(widget.otherUsername)),
+                                  if (isAdmin) ...[
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.verified,
+                                      color: Colors.lightBlueAccent,
+                                      size: 16,
+                                    ),
+                                  ],
+                                ],
+                              );
+                            },
                           ),
                           if (widget.otherUid != null)
                             _OnlineStatusText(
