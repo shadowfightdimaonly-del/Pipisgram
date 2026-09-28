@@ -20,11 +20,6 @@ class MiniGamesService {
     return doc.data() ?? {};
   }
 
-  Future<void> _saveTodayStats(String gameId, Map<String, dynamic> data) async {
-    final docId = '${_myUid}_${gameId}_$_today';
-    await _db.collection('gameStats').doc(docId).set(data, SetOptions(merge: true));
-  }
-
   Future<int> getClickerTapsToday() async {
     final stats = await _getTodayStats('clicker');
     return stats['taps'] ?? 0;
@@ -150,26 +145,6 @@ class MiniGamesService {
     return left;
   }
 
-  Future<bool> useGuessAttempt() async {
-    final ref = _db
-        .collection('gameStats')
-        .doc('${_myUid}_guess_$_today');
-
-    return _db.runTransaction<bool>((transaction) async {
-      final snapshot = await transaction.get(ref);
-      final data = snapshot.data() ?? {};
-      final used = ((data['attempts'] ?? 0) as num).toInt();
-
-      if (used >= 3) return false;
-
-      transaction.set(
-        ref,
-        {'attempts': used + 1},
-        SetOptions(merge: true),
-      );
-      return true;
-    });
-  }
   Future<Map<String, dynamic>> submitGuess(int number) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
