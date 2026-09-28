@@ -80,9 +80,10 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
 
     try {
       final earned = await _service.cashOutClickerStars();
+      final remaining = await _service.getClickerAvailableTaps();
       if (mounted) {
         setState(() {
-          _availableTaps = 0;
+          _availableTaps = remaining;
           _cashingOut = false;
         });
         if (earned <= 0) {
