@@ -43,7 +43,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (error == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Письмо для сброса пароля отправлено на email'),
+          content: Text(
+            'Письмо для сброса пароля отправлено. Проверь входящие. '
+            'Если письма нет, загляни в папку «Спам».',
+          ),
         ),
       );
     }
