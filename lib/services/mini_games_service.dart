@@ -47,7 +47,15 @@ class MiniGamesService {
     });
   }
 
-  Future<int> cashOutClickerStars(int ignoredTaps) async {
+  Future<int> getClickerAvailableTaps() async {
+    final stats = await _getTodayStats('clicker');
+    final taps = ((stats['taps'] ?? 0) as num).toInt().clamp(0, 1000);
+    final cashedOutTaps =
+        ((stats['cashedOutTaps'] ?? 0) as num).toInt().clamp(0, taps);
+    return taps - cashedOutTaps;
+  }
+
+  Future<int> cashOutClickerStars() async {
     final gameRef = _db
         .collection('gameStats')
         .doc('${_myUid}_clicker_$_today');
