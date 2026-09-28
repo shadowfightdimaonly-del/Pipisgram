@@ -45,6 +45,7 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
   final _inputCtrl = TextEditingController();
   final _db = FirebaseFirestore.instance;
   final _myUid = FirebaseAuth.instance.currentUser!.uid;
+  final _gamesService = MiniGamesService();
 
   final List<String> _log = [
     '> система готова. напиши "help" для списка команд',
@@ -220,7 +221,7 @@ premium: $premiumInfo''');
 
        case 'admin_star':
         if (!await _isAdmin()) {
-          _print('неизвестная команда: "$cmd"');
+          _print('неизвестная команда: "${cmd}"');
           break;
         }
         if (parts.length < 2) {
@@ -232,90 +233,66 @@ premium: $premiumInfo''');
           _print('количество должно быть от 1 до 1000');
           break;
         }
-        await _db.collection('users').doc(_myUid).update({
-          'shadowStars': FieldValue.increment(adminAmount),
-        });
-        _print('начислено $adminAmount★ (админ)');
+        try {
+          await _gamesService.economyAction(
+            action: 'admin_star',
+            amount: adminAmount,
+          );
+          _print('начислено ${adminAmount}★ (админ)');
+        } catch (e) {
+          _print('ошибка: $e');
+        }
         break;
 
       case 'penalty':
         if (!await _isAdmin()) {
-          _print('неизвестная команда: "$cmd"');
+          _print('неизвестная команда: "${cmd}"');
           break;
         }
         if (parts.length < 3) {
           _print('используй: penalty <количество> @username [причина]');
           break;
         }
-
         final penaltyAmount = int.tryParse(parts[1]);
         if (penaltyAmount == null || penaltyAmount <= 0) {
           _print('количество штрафа должно быть больше 0');
           break;
         }
-
         final targetDoc = await _findUserByUsername(parts[2]);
         if (targetDoc == null) {
           _print('пользователь ${parts[2]} не найден');
           break;
         }
-
         if (targetDoc.id == _myUid) {
           _print('нельзя выдать штраф самому себе');
           break;
         }
-
         final targetData = targetDoc.data() as Map<String, dynamic>;
         final targetStars = (targetData['shadowStars'] ?? 0) as int;
         final reason = parts.length > 3
             ? parts.sublist(3).join(' ')
             : 'нарушение правил';
-
-        final ownerDoc = await _db
-            .collection('users')
-            .where('userCode', isEqualTo: _supportUserCode)
-            .limit(1)
-            .get();
-
-        if (ownerDoc.docs.isEmpty) {
-          _print('не удалось найти баланс владельца');
-          break;
+        try {
+          await _gamesService.economyAction(
+            action: 'penalty',
+            amount: penaltyAmount,
+            targetUid: targetDoc.id,
+            reason: reason,
+          );
+          PushNotificationService.sendToUser(
+            targetUid: targetDoc.id,
+            title: 'Штраф ⚠️',
+            body: 'С тебя списано ${penaltyAmount}★. Причина: ${reason}',
+          );
+          final newBalance = targetStars - penaltyAmount;
+          _print(
+            'выдан штраф ${penaltyAmount}★ пользователю ${parts[2]}\n'
+            'причина: ${reason}\n'
+            'баланс: ${newBalance}★',
+          );
+        } catch (e) {
+          _print('ошибка: $e');
         }
-
-        final ownerUid = ownerDoc.docs.first.id;
-        if (ownerUid == targetDoc.id) {
-          _print('нельзя выдать штраф владельцу');
-          break;
-        }
-
-        await _db.collection('users').doc(targetDoc.id).update({
-          'shadowStars': FieldValue.increment(-penaltyAmount),
-        });
-        await _db.collection('users').doc(ownerUid).update({
-          'shadowStars': FieldValue.increment(penaltyAmount),
-        });
-
-        await _db.collection('penalties').add({
-          'targetUid': targetDoc.id,
-          'targetUsername': targetData['username'] ?? parts[2],
-          'amount': penaltyAmount,
-          'reason': reason,
-          'adminUid': _myUid,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-
-        PushNotificationService.sendToUser(
-          targetUid: targetDoc.id,
-          title: 'Штраф ⚠️',
-          body: 'С тебя списано $penaltyAmount★. Причина: $reason',
-        );
-
-        final newBalance = targetStars - penaltyAmount;
-        _print(
-          'выдан штраф $penaltyAmount★ пользователю ${parts[2]}\n'
-          'причина: $reason\n'
-          'баланс: $newBalance★',
-        );
         break;
 
       case 'shadow_star':
@@ -331,7 +308,7 @@ premium: $premiumInfo''');
         final myData = await _myData();
         final myStars = (myData?['shadowStars'] ?? 0) as int;
         if (myStars < amount) {
-          _print('недостаточно звёзд (у тебя $myStars★)');
+          _print('недостаточно звёзд (у тебя ${myStars}★)');
           break;
         }
         final recipientDoc = await _findUserByUsername(parts[2]);
@@ -339,37 +316,43 @@ premium: $premiumInfo''');
           _print('пользователь ${parts[2]} не найден');
           break;
         }
-        await _db.collection('users').doc(_myUid).update({
-          'shadowStars': FieldValue.increment(-amount),
-        });
-        await _db.collection('users').doc(recipientDoc.id).update({
-          'shadowStars': FieldValue.increment(amount),
-        });
-        final myUsernameForGift = myData?['username'] ?? 'кто-то';
-        PushNotificationService.sendToUser(
-          targetUid: recipientDoc.id,
-          title: 'Подарок! 🎁',
-          body: '@$myUsernameForGift подарил тебе $amount★',
-        );
-        _print('подарено $amount★ пользователю ${parts[2]}');
+        try {
+          await _gamesService.economyAction(
+            action: 'transfer',
+            amount: amount,
+            targetUid: recipientDoc.id,
+          );
+          final myUsernameForGift = myData?['username'] ?? 'кто-то';
+          PushNotificationService.sendToUser(
+            targetUid: recipientDoc.id,
+            title: 'Подарок! 🎁',
+            body: '@${myUsernameForGift} подарил тебе ${amount}★',
+          );
+          _print('подарено ${amount}★ пользователю ${parts[2]}');
+        } catch (e) {
+          _print('ошибка: $e');
+        }
         break;
 
       case 'buy_premium':
         final buyerData = await _myData();
-        final buyerStars = (buyerData?['shadowStars'] ?? 0) as int;
         if (_isPremiumActive(buyerData)) {
           _print('premium уже активен');
           break;
         }
+        final buyerStars = (buyerData?['shadowStars'] ?? 0) as int;
         if (buyerStars < _premiumPrice) {
-          _print('недостаточно звёзд (нужно $_premiumPrice★, у тебя $buyerStars★)');
+          _print(
+            'недостаточно звёзд (нужно $_premiumPrice★, у тебя ${buyerStars}★)',
+          );
           break;
         }
-        await _db.collection('users').doc(_myUid).update({
-          'shadowStars': FieldValue.increment(-_premiumPrice),
-          'isPremium': true,
-        });
-        _print('premium активирован! 🎉');
+        try {
+          await _gamesService.economyAction(action: 'buy_premium');
+          _print('premium активирован! 🎉');
+        } catch (e) {
+          _print('ошибка: $e');
+        }
         break;
 
       case 'give_premium':
@@ -380,7 +363,9 @@ premium: $premiumInfo''');
         final giverData = await _myData();
         final giverStars = (giverData?['shadowStars'] ?? 0) as int;
         if (giverStars < _premiumPrice) {
-          _print('недостаточно звёзд (нужно $_premiumPrice★, у тебя $giverStars★)');
+          _print(
+            'недостаточно звёзд (нужно $_premiumPrice★, у тебя ${giverStars}★)',
+          );
           break;
         }
         final premiumTargetDoc = await _findUserByUsername(parts[1]);
@@ -388,19 +373,21 @@ premium: $premiumInfo''');
           _print('пользователь ${parts[1]} не найден');
           break;
         }
-        await _db.collection('users').doc(_myUid).update({
-          'shadowStars': FieldValue.increment(-_premiumPrice),
-        });
-        await _db.collection('users').doc(premiumTargetDoc.id).update({
-          'isPremium': true,
-        });
-        final myUsernameForPremium = giverData?['username'] ?? 'кто-то';
-        PushNotificationService.sendToUser(
-          targetUid: premiumTargetDoc.id,
-          title: 'Premium! ✨',
-          body: '@$myUsernameForPremium подарил тебе Pipisgram Premium',
-        );
-        _print('подарен premium пользователю ${parts[1]}! 🎉');
+        try {
+          await _gamesService.economyAction(
+            action: 'give_premium',
+            targetUid: premiumTargetDoc.id,
+          );
+          final myUsernameForPremium = giverData?['username'] ?? 'кто-то';
+          PushNotificationService.sendToUser(
+            targetUid: premiumTargetDoc.id,
+            title: 'Premium! ✨',
+            body: '@${myUsernameForPremium} подарил тебе Pipisgram Premium',
+          );
+          _print('подарен premium пользователю ${parts[1]}! 🎉');
+        } catch (e) {
+          _print('ошибка: $e');
+        }
         break;
 
       case 'buy_gift':
@@ -463,41 +450,15 @@ premium: $premiumInfo''');
   }
 
   Future<void> _redeemPromoCode(String code) async {
-    final alreadyUsedDoc =
-        await _db.collection('usedPromoCodes').doc('${_myUid}_$code').get();
-    if (alreadyUsedDoc.exists) {
-      _print('этот промокод ты уже использовал');
-      return;
+    try {
+      await _gamesService.economyAction(
+        action: 'promo',
+        code: code,
+      );
+      _print('промокод активирован! 🎁');
+    } catch (e) {
+      _print('ошибка: $e');
     }
-
-    final promo = _promoCodes[code]!;
-    if (promo['type'] == 'stars') {
-      final amount = promo['amount'] as int;
-      await _db.collection('users').doc(_myUid).update({
-        'shadowStars': FieldValue.increment(amount),
-      });
-      _print('промокод активирован! +$amount★ 🎁');
-    } else if (promo['type'] == 'premium') {
-      final days = promo['days'] as int;
-      final data = await _myData();
-      DateTime baseDate = DateTime.now();
-      final existingExpiry = data?['premiumUntil'];
-      if (existingExpiry is Timestamp &&
-          existingExpiry.toDate().isAfter(baseDate)) {
-        baseDate = existingExpiry.toDate();
-      }
-      final newExpiry = baseDate.add(Duration(days: days));
-      await _db.collection('users').doc(_myUid).update({
-        'premiumUntil': Timestamp.fromDate(newExpiry),
-      });
-      _print('промокод активирован! Premium на $days дней 🎁');
-    }
-
-    await _db.collection('usedPromoCodes').doc('${_myUid}_$code').set({
-      'uid': _myUid,
-      'code': code,
-      'usedAt': FieldValue.serverTimestamp(),
-    });
   }
 
   Future<void> _handleGiftPurchase({
@@ -506,9 +467,7 @@ premium: $premiumInfo''');
   }) async {
     final gift = _gifts[giftId]!;
     final price = gift['price'] as int;
-    final field = gift['field'] as String;
     final requiresPremium = gift['requiresPremium'] == true;
-
     final buyerData = await _myData();
     final buyerStars = (buyerData?['shadowStars'] ?? 0) as int;
 
@@ -517,11 +476,11 @@ premium: $premiumInfo''');
       return;
     }
     if (buyerStars < price) {
-      _print('недостаточно звёзд (нужно $price★, у тебя $buyerStars★)');
+      _print('недостаточно звёзд (нужно $price★, у тебя ${buyerStars}★)');
       return;
     }
 
-    String targetUid = _myUid;
+    String? targetUid;
     if (targetUsername != null) {
       final targetDoc = await _findUserByUsername(targetUsername);
       if (targetDoc == null) {
@@ -531,25 +490,26 @@ premium: $premiumInfo''');
       targetUid = targetDoc.id;
     }
 
-    await _db.collection('users').doc(_myUid).update({
-      'shadowStars': FieldValue.increment(-price),
-    });
-    await _db.collection('users').doc(targetUid).update({
-      field: true,
-    });
-
-    if (targetUsername != null) {
-      final myUsernameForGiftItem = buyerData?['username'] ?? 'кто-то';
-      PushNotificationService.sendToUser(
+    try {
+      await _gamesService.economyAction(
+        action: targetUid == null ? 'buy_gift' : 'gift',
+        giftId: giftId,
         targetUid: targetUid,
-        title: 'Подарок! 🎁',
-        body: '@$myUsernameForGiftItem подарил тебе "${gift['name']}"',
       );
+      if (targetUid != null) {
+        final myUsernameForGiftItem = buyerData?['username'] ?? 'кто-то';
+        PushNotificationService.sendToUser(
+          targetUid: targetUid,
+          title: 'Подарок! 🎁',
+          body: '@$myUsernameForGiftItem подарил тебе "${gift['name']}"',
+        );
+      }
+      _print(targetUsername == null
+          ? '"${gift['name']}" куплен себе за $price★'
+          : '"${gift['name']}" подарен $targetUsername за $price★');
+    } catch (e) {
+      _print('ошибка: $e');
     }
-
-    _print(targetUsername == null
-        ? '"${gift['name']}" куплен себе за $price★'
-        : '"${gift['name']}" подарен $targetUsername за $price★');
   }
 
   @override
