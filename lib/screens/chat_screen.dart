@@ -202,13 +202,13 @@ class _ChatScreenState extends State<ChatScreen> {
         orElse: () => bubbleStyles.first,
       );
       otherRadius = otherStyle['radius'] as double;
-      otherTexture = otherData?['bubbleTextureUrl'];
+      otherTexture = otherData?['bubbleImageUrl'] ?? otherData?['bubbleTextureUrl'];
     }
 
     if (mounted) {
       setState(() {
         _myBubbleRadius = myStyle['radius'] as double;
-        _myBubbleTexture = myData?['bubbleTextureUrl'];
+        _myBubbleTexture = myData?['bubbleImageUrl'] ?? myData?['bubbleTextureUrl'];
         _myBubbleColor = (myData?['bubbleColor'] ?? 0xFF2AABEE) as int;
         _myBubbleGradientColor =
             (myData?['bubbleGradientColor'] ?? 0xFF8E24AA) as int;
