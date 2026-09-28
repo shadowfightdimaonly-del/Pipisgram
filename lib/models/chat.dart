@@ -9,6 +9,8 @@ class ChatPreview {
   final int otherProfileColor;
   final int unreadCount;
   final bool isGroup;
+  final int chatListColor;
+  final String chatListDecoration;
 
   ChatPreview({
     required this.id,
@@ -21,5 +23,7 @@ class ChatPreview {
     this.otherProfileColor = 0xFF2AABEE,
     this.unreadCount = 0,
     this.isGroup = false,
+    this.chatListColor = 0xFF2AABEE,
+    this.chatListDecoration = 'none',
   });
 }
