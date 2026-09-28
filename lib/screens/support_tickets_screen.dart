@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/help_service.dart';
 
 class SupportTicketsScreen extends StatefulWidget {
@@ -86,6 +87,12 @@ class _TicketViewState extends State<TicketView> {
   final s = HelpService();
   final c = TextEditingController();
 
+  @override
+  void dispose() {
+    c.dispose();
+    super.dispose();
+  }
+
   Future<void> send() async {
     if (c.text.trim().isEmpty) return;
     try {
@@ -165,42 +172,114 @@ class _TicketViewState extends State<TicketView> {
           ),
         ],
       ),
-      body: Column(children: [
-        Expanded(child: StreamBuilder(
-          stream: s.messages(widget.id),
-          builder: (_, AsyncSnapshot snap) {
-            final docs = snap.data?.docs ?? [];
-            return ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: docs.length,
-              itemBuilder: (_, i) {
-                final d = docs[i].data() as Map<String, dynamic>;
-                final mine = d['senderUid'] == s.uid;
-                return Align(
-                  alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    padding: const EdgeInsets.all(10),
-                    constraints: const BoxConstraints(maxWidth: 320),
-                    decoration: BoxDecoration(
-                      color: mine ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Text(d['text'] ?? ''),
+      body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: s.db.collection('tickets').doc(widget.id).snapshots(),
+        builder: (context, ticketSnap) {
+          final ticketData = ticketSnap.data?.data();
+          final open = ticketData?['status'] == 'open';
+
+          return Column(
+            children: [
+              if (ticketData != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
                   ),
-                );
-              },
-            );
-          },
-        )),
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(children: [
-            Expanded(child: TextField(controller: c, minLines: 1, maxLines: 5, decoration: const InputDecoration(hintText: 'Сообщение'))),
-            IconButton(onPressed: send, icon: const Icon(Icons.send)),
-          ]),
-        ),
-      ]),
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: Row(
+                    children: [
+                      Icon(
+                        open
+                            ? Icons.mark_email_unread_outlined
+                            : Icons.mark_email_read_outlined,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        open ? 'Обращение открыто' : 'Обращение закрыто',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              Expanded(
+                child: StreamBuilder(
+                  stream: s.messages(widget.id),
+                  builder: (_, AsyncSnapshot snap) {
+                    final docs = snap.data?.docs ?? [];
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (docs.isEmpty) {
+                      return const Center(child: Text('Сообщений пока нет'));
+                    }
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: docs.length,
+                      itemBuilder: (_, i) {
+                        final d = docs[i].data() as Map<String, dynamic>;
+                        final mine = d['senderUid'] == s.uid;
+                        return Align(
+                          alignment:
+                              mine ? Alignment.centerRight : Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            padding: const EdgeInsets.all(10),
+                            constraints: const BoxConstraints(maxWidth: 320),
+                            decoration: BoxDecoration(
+                              color: mine
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .primaryContainer
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Text(d['text'] ?? ''),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              if (open)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: c,
+                          minLines: 1,
+                          maxLines: 5,
+                          decoration: const InputDecoration(
+                            hintText: 'Сообщение',
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: send,
+                        icon: const Icon(Icons.send),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: Text(
+                    'Обращение закрыто. Откройте его снова, чтобы продолжить диалог.',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
