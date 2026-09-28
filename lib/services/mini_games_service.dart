@@ -218,7 +218,7 @@ class MiniGamesService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({'jumps': jumps}),
+      body: jsonEncode({'jumps': jumps, 'date': _today}),
     );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
