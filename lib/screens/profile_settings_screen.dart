@@ -742,6 +742,35 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     ],
                     const Divider(height: 32),
                     ListTile(
+                      leading: const Icon(Icons.switch_account_outlined),
+                      title: const Text('Сменить аккаунт'),
+                      subtitle: const Text('Выйти и войти под другим аккаунтом'),
+                      onTap: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Сменить аккаунт?'),
+                            content: const Text(
+                              'Текущая сессия будет завершена. После этого можно войти под другим аккаунтом.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Отмена'),
+                              ),
+                              FilledButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('Сменить'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed == true) {
+                          await AuthService().logout();
+                        }
+                      },
+                    ),
+                    ListTile(
                       leading: const Icon(Icons.logout, color: Colors.red),
                       title: const Text(
                         'Выйти из аккаунта',
