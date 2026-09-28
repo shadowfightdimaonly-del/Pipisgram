@@ -32,7 +32,10 @@ class ChatService {
             lastMessageTime: lastMessageTime,
             otherUsername: data['groupName'] ?? 'Группа', otherUid: '',
             otherProfileColor: data['groupColor'] ?? 0xFF546E7A,
-            unreadCount: unreadCount, isGroup: true,
+            unreadCount: unreadCount,
+            isGroup: true,
+            chatListColor: (data['chatListColor'] ?? 0xFF546E7A) as int,
+            chatListDecoration: data['chatListDecoration'] ?? 'none',
           );
         }
 
@@ -49,6 +52,8 @@ class ChatService {
           otherAvatarUrl: otherUserData['avatarUrl'], otherUid: otherUid,
           otherProfileColor: otherUserData['profileColor'] ?? 0xFF2AABEE,
           unreadCount: unreadCount,
+          chatListColor: (data['chatListColor'] ?? otherUserData['profileColor'] ?? 0xFF2AABEE) as int,
+          chatListDecoration: data['chatListDecoration'] ?? 'none',
         );
       });
 
