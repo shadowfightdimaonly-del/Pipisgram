@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'mini_games_screen.dart';
+import 'chat_screen.dart';
+import '../services/chat_service.dart';
 import '../services/push_notification_service.dart';
 
 const String _adminPassword = 'admin_status_pipisgram_19873';
 const int _premiumPrice = 750;
+const String _supportUserCode = '80930';
 const Map<String, Map<String, dynamic>> _gifts = {
   '1': {
     'name': 'Право редактора сообщений',
@@ -132,7 +135,8 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
   give_premium @ник           — подарить Premium (${_premiumPrice}★ с тебя)
   buy_gift <1/2/3>            — купить подарок себе
   gift <1/2/3> @ник           — подарить подарок
-  mini_game                   — начать мини-игру''');
+  mini_game                   — начать мини-игру
+  support                     — написать в техподдержку''');
         break;
 
       case 'whoami':
@@ -160,7 +164,7 @@ id: $_myUid''');
         break;
 
       case 'version':
-        _print('chatapp v1.0.0+1 (MVP)');
+        _print('chatapp v1.0.0+1');
         break;
 
       case 'ping':
@@ -347,6 +351,34 @@ premium: $premiumInfo''');
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const MiniGamesScreen()),
+        );
+        break;
+
+      case 'support':
+        _print('открываю чат с техподдержкой...');
+        final supportService = ChatService();
+        final supportUser =
+            await supportService.findUserByCode(_supportUserCode);
+        if (supportUser == null) {
+          _print('техподдержка сейчас недоступна');
+          break;
+        }
+        if (supportUser.uid == _myUid) {
+          _print('ты и есть техподдержка 😄');
+          break;
+        }
+        final supportChatId =
+            await supportService.getOrCreateChat(supportUser.uid);
+        if (!mounted) break;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(
+              chatId: supportChatId,
+              otherUsername: supportUser.username,
+              otherUid: supportUser.uid,
+            ),
+          ),
         );
         break;
 
