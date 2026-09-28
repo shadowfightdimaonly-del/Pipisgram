@@ -868,80 +868,85 @@ class _ChatScreenState extends State<ChatScreen> {
             clipBehavior: Clip.none,
             children: [
               Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (_isGroup && !isMine)
-                StreamBuilder<DocumentSnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(msg.senderId)
-                      .snapshots(),
-                  builder: (context, snap) {
-                    final senderData =
-                        snap.data?.data() as Map<String, dynamic>?;
-                    final senderUsername =
-                        senderData?['username'] ?? msg.senderUsername ?? 'неизвестный';
-                    final isAdmin = senderData?['isAdmin'] == true;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 2),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '@$senderUsername',
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_isGroup && !isMine)
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(msg.senderId)
+                          .snapshots(),
+                      builder: (context, snap) {
+                        final senderData =
+                            snap.data?.data() as Map<String, dynamic>?;
+                        final senderUsername =
+                            senderData?['username'] ??
+                                msg.senderUsername ??
+                                'неизвестный';
+                        final isAdmin = senderData?['isAdmin'] == true;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '@$senderUsername',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                              if (isAdmin) ...[
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.verified,
+                                  color: Colors.lightBlueAccent,
+                                  size: 14,
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  _buildMessageContent(msg, isMine),
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (msg.edited)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Text(
+                            'изменено',
                             style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
+                              fontSize: 10,
+                              fontStyle: FontStyle.italic,
+                              color: textColor.withOpacity(0.7),
                             ),
                           ),
-                          if (isAdmin) ...[
-                            const SizedBox(width: 4),
-                            const Icon(
-                              Icons.verified,
-                              color: Colors.lightBlueAccent,
-                              size: 14,
-                            ),
-                          ],
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              _buildMessageContent(msg, isMine),
-              const SizedBox(height: 2),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (msg.edited)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: Text(
-                        'изменено',
+                        ),
+                      Text(
+                        DateFormat('HH:mm').format(msg.timestamp),
                         style: TextStyle(
                           fontSize: 10,
-                          fontStyle: FontStyle.italic,
-                          color: textColor.withOpacity(0.7),
+                          color: customTimeColor,
                         ),
                       ),
-                    ),
-                  Text(
-                    DateFormat('HH:mm').format(msg.timestamp),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: customTimeColor,
-                    ),
+                      if (isMine) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          msg.read ? Icons.done_all : Icons.done,
+                          size: 14,
+                          color: msg.read
+                              ? customCheckColor
+                              : customTimeColor,
+                        ),
+                      ],
+                    ],
                   ),
-                  if (isMine) ...[
-                    const SizedBox(width: 4),
-                    Icon(
-                      msg.read ? Icons.done_all : Icons.done,
-                      size: 14,
-                      color: msg.read
-                          ? customCheckColor
-                          : customTimeColor,
-                    ),
-                  ],
                 ],
               ),
               if (decorationIcon != null)
