@@ -19,6 +19,7 @@ import '../models/message.dart';
 import 'group_info_screen.dart';
 import 'view_profile_screen.dart';
 import 'profile_settings_screen.dart';
+import 'chat_appearance_screen.dart';
 
 enum _UploadStatus { uploading, error }
 
@@ -67,6 +68,8 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<_PendingUpload> _pendingUploads = [];
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   final Set<String> _initialUnreadMessageIds = {};
+  String? _chatBackgroundUrl;
+  int _chatBackgroundColorValue = 0xFF121212;
 
   @override
   void initState() {
@@ -74,6 +77,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _checkIfGroup();
     _checkEditRights();
     _loadBubbleStyles();
+    _loadChatAppearance();
     _initializeReadState();
     _watchConnectivity();
   }
@@ -130,6 +134,20 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _checkEditRights() async {
     final hasGift = await _chatService.hasEditMessagesGift();
     if (mounted) setState(() => _canEditOthersMessages = hasGift);
+  }
+
+  Future<void> _loadChatAppearance() async {
+    final doc = await FirebaseFirestore.instance
+        .collection('chats')
+        .doc(widget.chatId)
+        .get();
+    final data = doc.data();
+    if (!mounted) return;
+    setState(() {
+      _chatBackgroundUrl = data?['chatBackgroundUrl'];
+      _chatBackgroundColorValue =
+          (data?['chatBackgroundColor'] ?? 0xFF121212) as int;
+    });
   }
 
   Future<void> _loadBubbleStyles() async {
@@ -804,6 +822,24 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        actions: [
+          IconButton(
+            tooltip: 'Оформление чата',
+            icon: const Icon(Icons.palette_outlined),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatAppearanceScreen(
+                    chatId: widget.chatId,
+                    chatName: widget.otherUsername,
+                  ),
+                ),
+              );
+              _loadChatAppearance();
+            },
+          ),
+        ],
         title: _isOffline
             ? const Text(
                 'Ожидание сети...',
@@ -910,8 +946,22 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
       ),
-      body: Column(
-        children: [
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Color(_chatBackgroundColorValue),
+          image: _chatBackgroundUrl != null
+              ? DecorationImage(
+                  image: CachedNetworkImageProvider(_chatBackgroundUrl!),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Colors.black.withOpacity(0.18),
+                    BlendMode.darken,
+                  ),
+                )
+              : null,
+        ),
+        child: Column(
+          children: [
           Expanded(
             child: StreamBuilder<List<Message>>(
               stream: _chatService.messagesStream(widget.chatId),
@@ -1060,7 +1110,8 @@ final textColor = isMine
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
