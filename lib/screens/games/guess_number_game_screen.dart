@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../services/mini_games_service.dart';
 
@@ -53,8 +52,10 @@ class _GuessNumberGameScreenState extends State<GuessNumberGameScreen> {
     });
 
     try {
-      final allowed = await _service.useGuessAttempt();
-      if (!allowed) {
+      final result = await _service.submitGuess(number);
+      final accepted = result['accepted'] == true;
+
+      if (!accepted) {
         if (mounted) {
           setState(() {
             _guessing = false;
@@ -65,14 +66,10 @@ class _GuessNumberGameScreenState extends State<GuessNumberGameScreen> {
         return;
       }
 
-      final secretNumber = Random().nextInt(15) + 1;
-      final won = number == secretNumber;
-
-      if (won) {
-        await _service.rewardGuessWin();
-      }
-
-      final newAttemptsLeft = await _service.getGuessAttemptsLeft();
+      final secretNumber = (result['secretNumber'] as num?)?.toInt();
+      final won = result['won'] == true;
+      final newAttemptsLeft =
+          (result['attemptsLeft'] as num?)?.toInt() ?? 0;
 
       if (mounted) {
         setState(() {
