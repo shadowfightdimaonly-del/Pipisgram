@@ -9,7 +9,6 @@ import 'profile_settings_screen.dart';
 import 'chat_appearance_screen.dart';
 import 'new_chat_screen.dart';
 import 'new_group_screen.dart';
-import 'support_screen.dart';
 
 class ChatListScreen extends StatelessWidget {
   const ChatListScreen({super.key});
@@ -40,7 +39,7 @@ class ChatListScreen extends StatelessWidget {
 
           return ListView.builder(
             // +2 — под "Командную строку" и "Избранное", они всегда первые
-            itemCount: chats.length + 3,
+            itemCount: chats.length + 2,
             itemBuilder: (context, index) {
               if (index == 0) {
                 return _CommandLineTile(
@@ -48,22 +47,6 @@ class ChatListScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                         builder: (context) => const CommandLineScreen()),
-                  ),
-                );
-              }
-
-              if (index == 1) {
-                return ListTile(
-                  leading: const CircleAvatar(
-                    child: Icon(Icons.support_agent),
-                  ),
-                  title: const Text('Поддержка'),
-                  subtitle: const Text('Тикеты и обращения'),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const SupportScreen(),
-                    ),
                   ),
                 );
               }
@@ -86,7 +69,7 @@ class ChatListScreen extends StatelessWidget {
                 );
               }
 
-              final chat = chats[index - 3];
+              final chat = chats[index - 2];
               final listColor = Color(chat.chatListColor);
               final decorationIcon = switch (chat.chatListDecoration) {
                 'water' => Icons.water_drop_outlined,
