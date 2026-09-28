@@ -168,6 +168,39 @@ class HelpService {
     );
   }
 
+  Future<void> penalizeUser(String targetUid, int amount, String reason) async {
+    final user = auth.currentUser;
+    if (user == null) throw Exception('Пользователь не авторизован');
+
+    final token = await user.getIdToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Не удалось получить Firebase ID token');
+    }
+
+    final response = await http.post(
+      Uri.parse('$_workerUrl/economy/action'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'action': 'penalty',
+        'amount': amount,
+        'targetUid': targetUid,
+        'reason': reason,
+      }),
+    );
+
+    Map<String, dynamic> data = {};
+    try {
+      data = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {}
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(data['error']?.toString() ?? 'Не удалось выдать штраф');
+    }
+  }
+
   Future<bool> admin() async {
     final doc = await db.collection('users').doc(uid).get();
     return doc.data()?['isAdmin'] == true;
