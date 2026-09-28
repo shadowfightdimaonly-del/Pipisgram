@@ -62,11 +62,14 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
 
     _bounceCtrl.reverse().then((_) => _bounceCtrl.forward());
     try {
+      final previousCount = _tapsToday;
       final newCount = await _service.registerClickerTap();
       if (mounted) {
         setState(() {
           _tapsToday = newCount;
-          _availableTaps++;
+          if (newCount > previousCount) {
+            _availableTaps++;
+          }
         });
       }
     } catch (e) {
