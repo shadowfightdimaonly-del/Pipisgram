@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'mini_games_screen.dart';
 import 'chat_screen.dart';
 import 'support_screen.dart';
+import '../services/mini_games_service.dart';
 import '../services/chat_service.dart';
 import '../services/push_notification_service.dart';
 
