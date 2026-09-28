@@ -865,7 +865,20 @@ class _ChatScreenState extends State<ChatScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(widget.otherUsername),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(child: Text(widget.otherUsername)),
+                              if (isAdmin) ...[
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.verified,
+                                  color: Colors.lightBlueAccent,
+                                  size: 16,
+                                ),
+                              ],
+                            ],
+                          ),
                           if (widget.otherUid != null)
                             _OnlineStatusText(
                               myUid: _myUid,
