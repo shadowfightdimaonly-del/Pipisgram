@@ -189,13 +189,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
     double otherRadius = 16.0;
     String? otherTexture;
+    Map<String, dynamic> otherData = {};
     if (widget.otherUid != null) {
       final otherDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.otherUid)
           .get();
-      final otherData = otherDoc.data();
-      final otherStyleId = otherData?['bubbleStyle'] ?? 'rounded';
+      otherData = otherDoc.data() ?? {};
+      final otherStyleId = otherData['bubbleStyle'] ?? 'rounded';
       final otherStyle = bubbleStyles.firstWhere(
         (s) => s['id'] == otherStyleId,
         orElse: () => bubbleStyles.first,
@@ -644,9 +645,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageContent(Message msg, bool isMine) {
-    final textColor = isMine
-        ? Theme.of(context).colorScheme.onPrimary
-        : Theme.of(context).colorScheme.onSurfaceVariant;
+    final textColor = Color(
+      isMine ? _myBubbleTextColor : _otherBubbleTextColor,
+    );
     final isOpeningMedia = _openingMediaId == msg.id;
 
     if (msg.type == MessageType.image && msg.mediaUrl != null) {
