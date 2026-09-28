@@ -122,11 +122,36 @@ class MiniGamesService {
       return true;
     });
   }
-  Future<void> rewardGuessWin() async {
-    await _db.collection('users').doc(_myUid).update({
-      'shadowStars': FieldValue.increment(1),
-    });
+  Future<Map<String, dynamic>> submitGuess(int number) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('Пользователь не авторизован');
+    }
+
+    final token = await user.getIdToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Не удалось получить Firebase ID token');
+    }
+
+    final response = await http.post(
+      Uri.parse('$_workerUrl/economy/guess'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'date': _today,
+        'number': number,
+      }),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Guess failed: ${response.statusCode}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
   }
+
 
   Future<void> cashOutDinoStars(int jumps) async {
     final wholeStars = (jumps * 0.5).floor();
