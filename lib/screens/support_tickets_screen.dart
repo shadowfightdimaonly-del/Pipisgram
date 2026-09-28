@@ -11,11 +11,18 @@ class SupportTicketsScreen extends StatefulWidget {
 class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
   final s = HelpService();
   bool admin = false;
+  Future<List<Map<String, dynamic>>>? _adminTicketsFuture;
 
   @override
   void initState() {
     super.initState();
-    s.admin().then((v) { if (mounted) setState(() => admin = v); });
+    s.admin().then((v) {
+      if (!mounted) return;
+      setState(() {
+        admin = v;
+        if (v) _adminTicketsFuture = s.adminTickets();
+      });
+    });
   }
 
   Future<void> newTicket() async {
@@ -43,34 +50,125 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final stream = admin ? s.all() : s.mine();
     return Scaffold(
-      appBar: AppBar(title: const Text('Поддержка')),
-      floatingActionButton: admin ? null : FloatingActionButton(
-        onPressed: newTicket, child: const Icon(Icons.add_comment_outlined)),
-      body: StreamBuilder(
-        stream: stream,
-        builder: (_, AsyncSnapshot snap) {
-          if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-          final docs = snap.data?.docs ?? [];
-          if (docs.isEmpty) return const Center(child: Text('Обращений пока нет'));
-          return ListView.builder(
-            itemCount: docs.length,
-            itemBuilder: (_, i) {
-              final d = docs[i].data() as Map<String, dynamic>;
-              final open = d['status'] == 'open';
-              return ListTile(
-                leading: Icon(open ? Icons.mark_email_unread_outlined : Icons.mark_email_read_outlined),
-                title: Text(d['subject'] ?? 'Без темы'),
-                subtitle: Text(d['lastMessage'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
-                trailing: Text(open ? 'Открыт' : 'Закрыт'),
-                onTap: () => Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => TicketView(id: docs[i].id, admin: admin))),
-              );
-            },
-          );
-        },
+      appBar: AppBar(
+        title: const Text('Поддержка'),
+        actions: [
+          if (admin)
+            IconButton(
+              tooltip: 'Обновить',
+              onPressed: () => setState(() {
+                _adminTicketsFuture = s.adminTickets();
+              }),
+              icon: const Icon(Icons.refresh),
+            ),
+        ],
       ),
+      floatingActionButton: admin ? null : FloatingActionButton(
+        onPressed: newTicket,
+        child: const Icon(Icons.add_comment_outlined),
+      ),
+      body: admin
+          ? FutureBuilder<List<Map<String, dynamic>>>(
+              future: _adminTicketsFuture,
+              builder: (_, snap) {
+                if (snap.connectionState == ConnectionState.waiting ||
+                    _adminTicketsFuture == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snap.hasError) {
+                  return Center(
+                    child: Text('Ошибка загрузки обращений: ${snap.error}'),
+                  );
+                }
+                final tickets = snap.data ?? [];
+                if (tickets.isEmpty) {
+                  return const Center(child: Text('Обращений пока нет'));
+                }
+                return ListView.builder(
+                  itemCount: tickets.length,
+                  itemBuilder: (_, i) {
+                    final d = tickets[i];
+                    final open = d['status'] == 'open';
+                    final isAppeal = d['type'] == 'block_appeal';
+                    return ListTile(
+                      leading: Icon(
+                        isAppeal
+                            ? Icons.gavel_outlined
+                            : (open
+                                ? Icons.mark_email_unread_outlined
+                                : Icons.mark_email_read_outlined),
+                      ),
+                      title: Text(
+                        isAppeal
+                            ? '⚖️ Апелляция на блокировку'
+                            : (d['subject'] ?? 'Без темы').toString(),
+                      ),
+                      subtitle: Text(
+                        d['lastMessage']?.toString() ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: Text(open ? 'Открыт' : 'Закрыт'),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => TicketView(
+                            id: d['id'].toString(),
+                            admin: true,
+                          ),
+                        ),
+                      ).then((_) {
+                        if (mounted) {
+                          setState(() {
+                            _adminTicketsFuture = s.adminTickets();
+                          });
+                        }
+                      }),
+                    );
+                  },
+                );
+              },
+            )
+          : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: s.mine(),
+              builder: (_, snap) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final docs = snap.data?.docs ?? [];
+                if (docs.isEmpty) {
+                  return const Center(child: Text('Обращений пока нет'));
+                }
+                return ListView.builder(
+                  itemCount: docs.length,
+                  itemBuilder: (_, i) {
+                    final d = docs[i].data();
+                    final open = d['status'] == 'open';
+                    return ListTile(
+                      leading: Icon(
+                        open
+                            ? Icons.mark_email_unread_outlined
+                            : Icons.mark_email_read_outlined,
+                      ),
+                      title: Text(d['subject'] ?? 'Без темы'),
+                      subtitle: Text(
+                        d['lastMessage'] ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: Text(open ? 'Открыт' : 'Закрыт'),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => TicketView(id: docs[i].id, admin: false),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
     );
   }
 }
