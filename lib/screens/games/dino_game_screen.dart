@@ -145,12 +145,21 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
 
   Future<void> _cashOut() async {
     if (_jumps == 0) return;
-    await _service.cashOutDinoStars(_jumps);
-    final earned = (_jumps * 0.5).floor();
-    setState(() => _jumps = 0);
-    if (mounted) {
+
+    final jumpsToCashOut = _jumps;
+    try {
+      final earned = await _service.cashOutDinoStars(jumpsToCashOut);
+
+      if (!mounted) return;
+      setState(() => _jumps = 0);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Получено $earned★')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не удалось забрать награду')),
       );
     }
   }
