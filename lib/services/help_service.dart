@@ -123,7 +123,6 @@ class HelpService {
   Stream<QuerySnapshot<Map<String, dynamic>>> mine() {
     return db.collection('tickets')
         .where('ownerUid', isEqualTo: uid)
-        .orderBy('updatedAt', descending: true)
         .snapshots();
   }
 
