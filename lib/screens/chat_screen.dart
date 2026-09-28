@@ -720,16 +720,42 @@ class _ChatScreenState extends State<ChatScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (_isGroup && !isMine)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: Text(
-                    '@${msg.senderUsername ?? "неизвестный"}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
+                StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(msg.senderId)
+                      .snapshots(),
+                  builder: (context, snap) {
+                    final senderData =
+                        snap.data?.data() as Map<String, dynamic>?;
+                    final senderUsername =
+                        senderData?['username'] ?? msg.senderUsername ?? 'неизвестный';
+                    final isAdmin = senderData?['isAdmin'] == true;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '@$senderUsername',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          if (isAdmin) ...[
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.verified,
+                              color: Colors.lightBlueAccent,
+                              size: 14,
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
                 ),
               _buildMessageContent(msg, isMine),
               const SizedBox(height: 2),
@@ -819,6 +845,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             final data =
                                 snap.data?.data() as Map<String, dynamic>?;
                             final avatarUrl = data?['avatarUrl'];
+                    final isAdmin = data?['isAdmin'] == true;
                             return CircleAvatar(
                               radius: 18,
                               backgroundImage: avatarUrl != null
