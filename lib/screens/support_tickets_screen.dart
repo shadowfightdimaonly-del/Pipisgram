@@ -129,9 +129,123 @@ class _TicketViewState extends State<TicketView> {
                 onSelected: (v) async {
                   if (v == 'finish') await finish();
                   if (v == 'reopen') await s.reopen(widget.id);
-                  if (v == 'warn' || v == 'block24' || v == 'blockPermanent' || v == 'unblock') {
+                  if (v == 'warn' || v == 'block24' || v == 'blockPermanent' || v == 'unblock' || v == 'penalty') {
                     final ownerUid = snap.data?.data()?['ownerUid']?.toString();
                     if (ownerUid == null || ownerUid.isEmpty) return;
+
+                    if (v == 'penalty') {
+                      final amountController = TextEditingController();
+                      final reasonController = TextEditingController();
+                      final result = await showDialog<Map<String, dynamic>>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('🌟 Списание звёзд 🌟'),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextField(
+                                controller: amountController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Количество звёзд',
+                                  hintText: '70',
+                                  prefixText: '🌟 ',
+                                ),
+                              ),
+                              TextField(
+                                controller: reasonController,
+                                decoration: const InputDecoration(labelText: 'Причина'),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Отмена'),
+                            ),
+                            FilledButton(
+                              onPressed: () {
+                                final amount = int.tryParse(amountController.text.trim());
+                                final reason = reasonController.text.trim();
+                                if (amount != null && amount > 0 && reason.isNotEmpty) {
+                                  Navigator.pop(context, {'amount': amount, 'reason': reason});
+                                }
+                              },
+                              child: const Text('Продолжить'),
+                            ),
+                          ],
+                        ),
+                      );
+                      amountController.dispose();
+                      reasonController.dispose();
+                      if (result == null) return;
+
+                      final amount = result['amount'] as int;
+                      final reason = result['reason'] as String;
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text('🌟 Списать $amount звёзд?'),
+                          content: Text('Будет списано 🌟 $amount.\n\nПричина: $reason'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Отмена'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: Text('Списать $amount 🌟'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed != true) return;
+
+                      try {
+                        await s.penalizeUser(ownerUid, amount, reason);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Штраф применён')),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('$e')),
+                          );
+                        }
+                      }
+                      return;
+                    }
+
+                    final actionTitle = v == 'warn'
+                        ? 'Предупредить пользователя?'
+                        : v == 'block24'
+                            ? 'Заморозить на 24 часа?'
+                            : v == 'blockPermanent'
+                                ? 'Заблокировать навсегда?'
+                                : 'Снять блокировку?';
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text(actionTitle),
+                        content: const Text(
+                          'Проверь действие перед применением. После подтверждения оно будет отправлено на сервер.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Отмена'),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Подтвердить'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed != true) return;
+
                     try {
                       if (v == 'warn') {
                         await s.warnUser(ownerUid, 'Нарушение правил поддержки');
@@ -162,7 +276,8 @@ class _TicketViewState extends State<TicketView> {
                   if (widget.admin) ...[
                     const PopupMenuDivider(),
                     const PopupMenuItem(value: 'warn', child: Text('Предупредить')),
-                    const PopupMenuItem(value: 'block24', child: Text('Заблокировать на 24 часа')),
+                    const PopupMenuItem(value: 'penalty', child: Text('Штраф звёздами')),
+                    const PopupMenuItem(value: 'block24', child: Text('Заморозить на 24 часа')),
                     const PopupMenuItem(value: 'blockPermanent', child: Text('Заблокировать навсегда')),
                     const PopupMenuItem(value: 'unblock', child: Text('Снять блокировку')),
                   ],
