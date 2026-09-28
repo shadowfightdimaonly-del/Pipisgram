@@ -18,6 +18,37 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   String? _error;
 
+  Future<void> _forgotPassword() async {
+    final email = _emailCtrl.text.trim();
+
+    if (email.isEmpty) {
+      setState(() => _error = 'Сначала введи email');
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    final error = await _auth.resetPassword(email);
+
+    if (!mounted) return;
+
+    setState(() {
+      _loading = false;
+      _error = error;
+    });
+
+    if (error == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Письмо для сброса пароля отправлено на email'),
+        ),
+      );
+    }
+  }
+
   Future<void> _submit() async {
     setState(() {
       _loading = true;
@@ -110,8 +141,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         )
                       : Text(_isRegister ? 'Зарегистрироваться' : 'Войти'),
                 ),
+                if (!_isRegister)
+                  TextButton(
+                    onPressed: _loading ? null : _forgotPassword,
+                    child: const Text('Забыли пароль?'),
+                  ),
                 TextButton(
-                  onPressed: () => setState(() => _isRegister = !_isRegister),
+                  onPressed: _loading ? null : () => setState(() => _isRegister = !_isRegister),
                   child: Text(_isRegister
                       ? 'Уже есть аккаунт? Войти'
                       : 'Нет аккаунта? Зарегистрироваться'),
