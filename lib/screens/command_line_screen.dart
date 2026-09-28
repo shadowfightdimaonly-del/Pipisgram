@@ -131,6 +131,7 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
   balance                     — сколько у тебя звёзд и статус premium
   change_username <новый>     — сменить юзернейм
   shadow_star <кол-во> @ник   — подарить звёзды
+  penalty <кол-во> @ник       — штраф звёздами (админ)
   buy_premium                 — купить Premium (${_premiumPrice}★)
   give_premium @ник           — подарить Premium (${_premiumPrice}★ с тебя)
   buy_gift <1/2/3>            — купить подарок себе
@@ -243,6 +244,86 @@ premium: $premiumInfo''');
           'shadowStars': FieldValue.increment(adminAmount),
         });
         _print('начислено $adminAmount★ (админ)');
+        break;
+
+      case 'penalty':
+        if (!await _isAdmin()) {
+          _print('неизвестная команда: "$cmd"');
+          break;
+        }
+        if (parts.length < 3) {
+          _print('используй: penalty <количество> @username [причина]');
+          break;
+        }
+
+        final penaltyAmount = int.tryParse(parts[1]);
+        if (penaltyAmount == null || penaltyAmount <= 0) {
+          _print('количество штрафа должно быть больше 0');
+          break;
+        }
+
+        final targetDoc = await _findUserByUsername(parts[2]);
+        if (targetDoc == null) {
+          _print('пользователь ${parts[2]} не найден');
+          break;
+        }
+
+        if (targetDoc.id == _myUid) {
+          _print('нельзя выдать штраф самому себе');
+          break;
+        }
+
+        final targetData = targetDoc.data() as Map<String, dynamic>;
+        final targetStars = (targetData['shadowStars'] ?? 0) as int;
+        final reason = parts.length > 3
+            ? parts.sublist(3).join(' ')
+            : 'нарушение правил';
+
+        final ownerDoc = await _db
+            .collection('users')
+            .where('userCode', isEqualTo: _supportUserCode)
+            .limit(1)
+            .get();
+
+        if (ownerDoc.docs.isEmpty) {
+          _print('не удалось найти баланс владельца');
+          break;
+        }
+
+        final ownerUid = ownerDoc.docs.first.id;
+        if (ownerUid == targetDoc.id) {
+          _print('нельзя выдать штраф владельцу');
+          break;
+        }
+
+        await _db.collection('users').doc(targetDoc.id).update({
+          'shadowStars': FieldValue.increment(-penaltyAmount),
+        });
+        await _db.collection('users').doc(ownerUid).update({
+          'shadowStars': FieldValue.increment(penaltyAmount),
+        });
+
+        await _db.collection('penalties').add({
+          'targetUid': targetDoc.id,
+          'targetUsername': targetData['username'] ?? parts[2],
+          'amount': penaltyAmount,
+          'reason': reason,
+          'adminUid': _myUid,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        PushNotificationService.sendToUser(
+          targetUid: targetDoc.id,
+          title: 'Штраф ⚠️',
+          body: 'С тебя списано $penaltyAmount★. Причина: $reason',
+        );
+
+        final newBalance = targetStars - penaltyAmount;
+        _print(
+          'выдан штраф $penaltyAmount★ пользователю ${parts[2]}\n'
+          'причина: $reason\n'
+          'баланс: $newBalance★',
+        );
         break;
 
       case 'shadow_star':
