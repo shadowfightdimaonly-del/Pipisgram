@@ -63,6 +63,24 @@ class AuthService {
       final userDoc = await userRef.get();
       final data = userDoc.data();
 
+      if (data?['accountPermanentlyBlocked'] == true) {
+        await OneSignal.logout();
+        await _auth.signOut();
+        return 'Аккаунт заблокирован навсегда';
+      }
+
+      final blockedUntil = data?['supportBlockedUntil'];
+      if (blockedUntil is Timestamp) {
+        final until = blockedUntil.toDate();
+        if (until.isAfter(DateTime.now())) {
+          await OneSignal.logout();
+          await _auth.signOut();
+          final remaining = until.difference(DateTime.now());
+          final hours = (remaining.inMinutes / 60).ceil();
+          return 'Аккаунт временно заблокирован. Осталось примерно $hours ч.';
+        }
+      }
+
       final showStatus = data?['showOnlineStatus'] ?? true;
       final updates = <String, dynamic>{};
       if (showStatus) {
