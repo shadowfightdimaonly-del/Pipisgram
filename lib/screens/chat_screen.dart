@@ -61,8 +61,33 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _canEditOthersMessages = false;
   double _myBubbleRadius = 16.0;
   String? _myBubbleTexture;
+  int _myBubbleColor = 0xFF2AABEE;
+  int _myBubbleGradientColor = 0xFF8E24AA;
+  double _myBubbleOpacity = 1;
+  bool _myBubbleGradientEnabled = false;
+  bool _myBubbleBorderEnabled = false;
+  int _myBubbleBorderColor = 0xFFFFFFFF;
+  double _myBubbleBorderWidth = 1;
+  bool _myBubbleShadowEnabled = false;
+  int _myBubbleTextColor = 0xFFFFFFFF;
+  int _myBubbleTimeColor = 0xB3FFFFFF;
+  int _myBubbleCheckColor = 0xFF81D4FA;
+  String _myBubbleDecoration = 'none';
+
   double _otherBubbleRadius = 16.0;
   String? _otherBubbleTexture;
+  int _otherBubbleColor = 0xFF2AABEE;
+  int _otherBubbleGradientColor = 0xFF8E24AA;
+  double _otherBubbleOpacity = 1;
+  bool _otherBubbleGradientEnabled = false;
+  bool _otherBubbleBorderEnabled = false;
+  int _otherBubbleBorderColor = 0xFFFFFFFF;
+  double _otherBubbleBorderWidth = 1;
+  bool _otherBubbleShadowEnabled = false;
+  int _otherBubbleTextColor = 0xFFFFFFFF;
+  int _otherBubbleTimeColor = 0xB3FFFFFF;
+  int _otherBubbleCheckColor = 0xFF81D4FA;
+  String _otherBubbleDecoration = 'none';
   bool _isOffline = false;
   bool _uploadingMedia = false;
   final List<_PendingUpload> _pendingUploads = [];
@@ -183,8 +208,50 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         _myBubbleRadius = myStyle['radius'] as double;
         _myBubbleTexture = myData?['bubbleTextureUrl'];
+        _myBubbleColor = (myData?['bubbleColor'] ?? 0xFF2AABEE) as int;
+        _myBubbleGradientColor =
+            (myData?['bubbleGradientColor'] ?? 0xFF8E24AA) as int;
+        _myBubbleOpacity =
+            ((myData?['bubbleOpacity'] ?? 1) as num).toDouble().clamp(0.1, 1);
+        _myBubbleGradientEnabled = myData?['bubbleGradientEnabled'] == true;
+        _myBubbleBorderEnabled = myData?['bubbleBorderEnabled'] == true;
+        _myBubbleBorderColor =
+            (myData?['bubbleBorderColor'] ?? 0xFFFFFFFF) as int;
+        _myBubbleBorderWidth =
+            ((myData?['bubbleBorderWidth'] ?? 1) as num).toDouble().clamp(0.5, 6);
+        _myBubbleShadowEnabled = myData?['bubbleShadowEnabled'] == true;
+        _myBubbleTextColor = (myData?['bubbleTextColor'] ?? 0xFFFFFFFF) as int;
+        _myBubbleTimeColor =
+            (myData?['bubbleTimeColor'] ?? 0xB3FFFFFF) as int;
+        _myBubbleCheckColor =
+            (myData?['bubbleCheckColor'] ?? 0xFF81D4FA) as int;
+        _myBubbleDecoration = myData?['bubbleDecoration'] ?? 'none';
         _otherBubbleRadius = otherRadius;
         _otherBubbleTexture = otherTexture;
+        _otherBubbleColor =
+            (otherData?['bubbleColor'] ?? 0xFF2AABEE) as int;
+        _otherBubbleGradientColor =
+            (otherData?['bubbleGradientColor'] ?? 0xFF8E24AA) as int;
+        _otherBubbleOpacity =
+            ((otherData?['bubbleOpacity'] ?? 1) as num).toDouble().clamp(0.1, 1);
+        _otherBubbleGradientEnabled =
+            otherData?['bubbleGradientEnabled'] == true;
+        _otherBubbleBorderEnabled =
+            otherData?['bubbleBorderEnabled'] == true;
+        _otherBubbleBorderColor =
+            (otherData?['bubbleBorderColor'] ?? 0xFFFFFFFF) as int;
+        _otherBubbleBorderWidth =
+            ((otherData?['bubbleBorderWidth'] ?? 1) as num).toDouble().clamp(0.5, 6);
+        _otherBubbleShadowEnabled =
+            otherData?['bubbleShadowEnabled'] == true;
+        _otherBubbleTextColor =
+            (otherData?['bubbleTextColor'] ?? 0xFFFFFFFF) as int;
+        _otherBubbleTimeColor =
+            (otherData?['bubbleTimeColor'] ?? 0xB3FFFFFF) as int;
+        _otherBubbleCheckColor =
+            (otherData?['bubbleCheckColor'] ?? 0xFF81D4FA) as int;
+        _otherBubbleDecoration =
+            otherData?['bubbleDecoration'] ?? 'none';
       });
     }
   }
@@ -708,6 +775,49 @@ class _ChatScreenState extends State<ChatScreen> {
     String? bubbleTexture,
     Color textColor,
   ) {
+    final bubbleBaseColor =
+        Color(isMine ? _myBubbleColor : _otherBubbleColor);
+    final bubbleGradientColor = Color(
+      isMine ? _myBubbleGradientColor : _otherBubbleGradientColor,
+    );
+    final bubbleOpacity =
+        isMine ? _myBubbleOpacity : _otherBubbleOpacity;
+    final gradientEnabled =
+        isMine ? _myBubbleGradientEnabled : _otherBubbleGradientEnabled;
+    final borderEnabled =
+        isMine ? _myBubbleBorderEnabled : _otherBubbleBorderEnabled;
+    final borderColor =
+        Color(isMine ? _myBubbleBorderColor : _otherBubbleBorderColor);
+    final borderWidth =
+        isMine ? _myBubbleBorderWidth : _otherBubbleBorderWidth;
+    final shadowEnabled =
+        isMine ? _myBubbleShadowEnabled : _otherBubbleShadowEnabled;
+    final customTextColor =
+        Color(isMine ? _myBubbleTextColor : _otherBubbleTextColor);
+    final customTimeColor =
+        Color(isMine ? _myBubbleTimeColor : _otherBubbleTimeColor);
+    final customCheckColor =
+        Color(isMine ? _myBubbleCheckColor : _otherBubbleCheckColor);
+    final decoration =
+        isMine ? _myBubbleDecoration : _otherBubbleDecoration;
+    IconData? decorationIcon;
+    switch (decoration) {
+      case 'star':
+        decorationIcon = Icons.star;
+        break;
+      case 'water':
+        decorationIcon = Icons.water_drop_outlined;
+        break;
+      case 'bolt':
+        decorationIcon = Icons.bolt;
+        break;
+      case 'fire':
+        decorationIcon = Icons.local_fire_department;
+        break;
+      case 'heart':
+        decorationIcon = Icons.favorite;
+        break;
+    }
     return GestureDetector(
       onLongPress: () => _showMessageActions(msg),
       child: Align(
@@ -719,13 +829,32 @@ class _ChatScreenState extends State<ChatScreen> {
             maxWidth: MediaQuery.of(context).size.width * 0.75,
           ),
           decoration: BoxDecoration(
-            color: bubbleColor,
+            color: bubbleBaseColor.withOpacity(bubbleOpacity),
+            gradient: gradientEnabled
+                ? LinearGradient(
+                    colors: [
+                      bubbleBaseColor.withOpacity(bubbleOpacity),
+                      bubbleGradientColor.withOpacity(bubbleOpacity),
+                    ],
+                  )
+                : null,
             borderRadius: BorderRadius.circular(
               isMine ? _myBubbleRadius : _otherBubbleRadius,
             ),
+            border: borderEnabled
+                ? Border.all(color: borderColor, width: borderWidth)
+                : null,
+            boxShadow: shadowEnabled
+                ? const [
+                    BoxShadow(
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ]
+                : null,
             image: bubbleTexture != null
                 ? DecorationImage(
-                    image: NetworkImage(bubbleTexture),
+                    image: CachedNetworkImageProvider(bubbleTexture),
                     fit: BoxFit.cover,
                     colorFilter: ColorFilter.mode(
                       Colors.black.withOpacity(0.15),
@@ -734,7 +863,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   )
                 : null,
           ),
-          child: Column(
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (_isGroup && !isMine)
@@ -796,7 +928,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     DateFormat('HH:mm').format(msg.timestamp),
                     style: TextStyle(
                       fontSize: 10,
-                      color: textColor.withOpacity(0.7),
+                      color: customTimeColor,
                     ),
                   ),
                   if (isMine) ...[
@@ -805,12 +937,22 @@ class _ChatScreenState extends State<ChatScreen> {
                       msg.read ? Icons.done_all : Icons.done,
                       size: 14,
                       color: msg.read
-                          ? Colors.lightBlueAccent
-                          : textColor.withOpacity(0.7),
+                          ? customCheckColor
+                          : customTimeColor,
                     ),
                   ],
                 ],
               ),
+              if (decorationIcon != null)
+                Positioned(
+                  top: -12,
+                  right: -10,
+                  child: Icon(
+                    decorationIcon,
+                    size: 24,
+                    color: customTextColor.withOpacity(0.9),
+                  ),
+                ),
             ],
           ),
         ),
