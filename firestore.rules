@@ -12,13 +12,15 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.auth.uid == userId
         && !request.resource.data.keys().hasAny([
-          'isAdmin'
+          'isAdmin',
+          'shadowStars'
         ]);
 
       allow update: if request.auth != null
         && request.auth.uid == userId
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-          'isAdmin'
+          'isAdmin',
+          'shadowStars'
         ]);
 
       allow delete: if false;
