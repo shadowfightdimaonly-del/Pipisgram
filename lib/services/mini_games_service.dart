@@ -114,6 +114,7 @@ class MiniGamesService {
     required String action,
     int? amount,
     String? targetUid,
+    String? chatId,
     String? giftId,
     String? reason,
     String? code,
@@ -138,6 +139,7 @@ class MiniGamesService {
         'action': action,
         if (amount != null) 'amount': amount,
         if (targetUid != null) 'targetUid': targetUid,
+        if (chatId != null) 'chatId': chatId,
         if (giftId != null) 'giftId': giftId,
         if (reason != null) 'reason': reason,
         if (code != null) 'code': code,
@@ -166,6 +168,17 @@ class MiniGamesService {
             (data['premiumUntil'] as Timestamp).toDate().isAfter(DateTime.now()));
     final base = premium ? 6 : 3;
     return base + (data['hasGiftDoubleGuessAttempts'] == true ? 3 : 0);
+  }
+
+  Future<void> takeoverRemoveParticipant({
+    required String chatId,
+    required String targetUid,
+  }) async {
+    await economyAction(
+      action: 'takeover_remove_participant',
+      chatId: chatId,
+      targetUid: targetUid,
+    );
   }
 
   Future<void> changeOtherUsername({
