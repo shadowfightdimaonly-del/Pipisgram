@@ -17,7 +17,22 @@ class _CustomEmojiScreenState extends State<CustomEmojiScreen> {
   final _myUid = FirebaseAuth.instance.currentUser!.uid;
   bool _uploading = false;
 
-  static const int _maxEmoji = 12;
+  int _maxEmoji = 12;
+
+  Future<void> _loadLimit() async {
+    final doc = await _db.collection('users').doc(_myUid).get();
+    final data = doc.data() ?? {};
+    final premium = data['isPremium'] == true ||
+        (data['premiumUntil'] is Timestamp &&
+            (data['premiumUntil'] as Timestamp).toDate().isAfter(DateTime.now()));
+    if (mounted) setState(() => _maxEmoji = premium ? 24 : 12);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLimit();
+  }
 
   Future<void> _addEmoji() async {
     final picker = ImagePicker();
