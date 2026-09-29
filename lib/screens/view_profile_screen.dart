@@ -168,8 +168,6 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
                 'Власть над группами', Colors.deepOrange));
           }
 
-          final targetUsername = username.toString();
-
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
