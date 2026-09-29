@@ -12,6 +12,8 @@ import 'custom_emoji_screen.dart';
 import 'message_bubble_appearance_screen.dart';
 import 'admin_panel_screen.dart';
 import 'shadow_stars_screen.dart';
+import 'gifts_screen.dart';
+import 'premium_screen.dart';
 
 const List<Map<String, dynamic>> bubbleStyles = [
   {'id': 'rounded', 'name': 'Круглые', 'radius': 16.0},
@@ -655,6 +657,30 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       ),
                     ),
                     const Divider(height: 32),
+                    ListTile(
+                      leading: const Icon(Icons.card_giftcard_outlined),
+                      title: const Text('Подарки'),
+                      subtitle: const Text('Купленные подарки и магазин'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const GiftsScreen(),
+                        ),
+                      ),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.workspace_premium_outlined),
+                      title: const Text('Pipis Premium'),
+                      subtitle: const Text('Лимиты, скидки и возможности'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PremiumScreen(),
+                        ),
+                      ),
+                    ),
                     ListTile(
                       leading: const Icon(
                         Icons.stars_outlined,
