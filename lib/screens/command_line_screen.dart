@@ -12,20 +12,30 @@ const int _premiumPrice = 750;
 const String _supportUserCode = '80930';
 const Map<String, Map<String, dynamic>> _gifts = {
   '1': {
-    'name': 'Право менять чужие юзернеймы',
-    'price': 150,
-    'field': 'hasGiftChangeUsernames',
+    'name': 'Право редактора сообщений',
+    'price': 120,
+    'field': 'hasGiftEditMessages',
   },
   '2': {
-    'name': 'Двойные попытки в угадайке',
-    'price': 235,
-    'field': 'hasGiftDoubleGuessAttempts',
+    'name': 'Право менять чужие аватарки',
+    'price': 215,
+    'field': 'hasGiftChangeAvatars',
   },
   '3': {
     'name': 'Власть над группами',
     'price': 570,
     'field': 'hasGiftGroupTakeover',
     'requiresPremium': true,
+  },
+  '4': {
+    'name': 'Право менять чужие юзернеймы',
+    'price': 150,
+    'field': 'hasGiftChangeUsernames',
+  },
+  '5': {
+    'name': 'Двойные попытки в угадайке',
+    'price': 235,
+    'field': 'hasGiftDoubleGuessAttempts',
   },
 };
 
