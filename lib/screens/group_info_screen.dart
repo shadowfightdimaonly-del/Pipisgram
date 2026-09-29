@@ -49,50 +49,50 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
       return;
     }
 
-    final cooldownField = 'takeoverCooldownUntil_' + _myUid;
-    final cooldownValue = chatData?[cooldownField];
-    if (cooldownValue is Timestamp &&
-        cooldownValue.toDate().isAfter(DateTime.now())) {
-      final remaining = cooldownValue.toDate().difference(DateTime.now());
-      final minutes = remaining.inMinutes + 1;
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Подарок пока на перезарядке. Ещё примерно ' +
-              '$minutes мин.',
-            ),
-          ),
-        );
-      }
-      return;
-    }
-
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Удалить из группы?'),
-        content: Text('@$username будет удалён из "${widget.groupName}".'),
+        title: const Text('Забрать контроль?'),
+        content: Text(
+          '@$username будет удалён из "${widget.groupName}". '
+          'Подарок действует с перезарядкой 10 минут.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Отмена'),
           ),
-          TextButton(
+          FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Удалить', style: TextStyle(color: Colors.red)),
+            child: const Text('Удалить'),
           ),
         ],
       ),
     );
 
-    if (confirmed == true) {
-      await _chatService.removeParticipant(widget.chatId, uid);
-      await _db.collection('chats').doc(widget.chatId).update({
-        cooldownField: Timestamp.fromDate(
-          DateTime.now().add(const Duration(minutes: 10)),
-        ),
-      });
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await MiniGamesService().takeoverRemoveParticipant(
+        chatId: widget.chatId,
+        targetUid: uid,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('@$username удалён из группы')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.toString().replaceFirst('Exception: ', ''),
+            ),
+          ),
+        );
+      }
     }
   }
 
