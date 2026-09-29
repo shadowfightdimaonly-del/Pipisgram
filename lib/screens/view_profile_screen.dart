@@ -58,9 +58,19 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
     final url = await ImageUploadService.uploadImage(bytes);
 
     if (url != null) {
-      await _db.collection('users').doc(widget.uid).update({
-        'avatarUrl': url,
-      });
+      try {
+        await _chatService.changeOtherAvatar(widget.uid, url);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                e.toString().replaceFirst('Exception: ', ''),
+              ),
+            ),
+          );
+        }
+      }
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Не удалось загрузить фото')),
