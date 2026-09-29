@@ -136,12 +136,58 @@ class MiniGamesService {
     return data;
   }
 
+  Future<int> getGuessMaxAttempts() async {
+    final user = await _db.collection('users').doc(_myUid).get();
+    final data = user.data() ?? {};
+    return data['hasGiftDoubleGuessAttempts'] == true ? 6 : 3;
+  }
+
+  Future<void> changeOtherUsername({
+    required String targetUid,
+    required String newUsername,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('Пользователь не авторизован');
+    }
+
+    final token = await user.getIdToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Не удалось получить Firebase ID token');
+    }
+
+    final response = await http.post(
+      Uri.parse('$_workerUrl/economy/action'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'action': 'change_user_username',
+        'targetUid': targetUid,
+        'newUsername': newUsername,
+      }),
+    );
+
+    Map<String, dynamic> data = {};
+    try {
+      data = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {}
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        data['error']?.toString() ?? 'Не удалось изменить username',
+      );
+    }
+  }
+
   Future<int> getGuessAttemptsLeft() async {
     final stats = await _getTodayStats('guess');
+    final maxAttempts = await getGuessMaxAttempts();
     final used = (stats['attempts'] ?? 0) as int;
-    final left = 3 - used;
+    final left = maxAttempts - used;
     if (left < 0) return 0;
-    if (left > 3) return 3;
+    if (left > maxAttempts) return maxAttempts;
     return left;
   }
 
