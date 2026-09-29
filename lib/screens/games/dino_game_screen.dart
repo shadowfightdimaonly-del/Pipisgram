@@ -36,6 +36,7 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
   double _speed = 5;
   int _jumps = 0;
   int _score = 0;
+  double _starsPerJump = 0.5;
   List<_Obstacle> _obstacles = [];
   final List<Offset> _stars = [];
 
@@ -53,7 +54,13 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
     super.dispose();
   }
 
+  Future<void> _loadRewardRate() async {
+    final rate = await _service.getDinoStarsPerJump();
+    if (mounted) setState(() => _starsPerJump = rate);
+  }
+
   void _startGame() {
+    _loadRewardRate();
     setState(() {
       _started = true;
       _gameOver = false;
@@ -166,7 +173,7 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final sessionStars = (_jumps * 0.5).floor();
+    final sessionStars = (_jumps * _starsPerJump);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Ночной бег')),
@@ -178,11 +185,11 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Прыжков: $_jumps = $sessionStars★',
+                Text('Прыжков: $_jumps = ${sessionStars % 1 == 0 ? sessionStars.toInt() : sessionStars}★',
                     style: const TextStyle(color: Colors.white)),
                 FilledButton(
                   onPressed: _jumps > 0 ? _cashOut : null,
-                  child: Text('Забрать $sessionStars★'),
+                  child: Text('Забрать ${sessionStars % 1 == 0 ? sessionStars.toInt() : sessionStars}★'),
                 ),
               ],
             ),
