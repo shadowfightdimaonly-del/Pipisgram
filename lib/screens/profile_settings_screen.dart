@@ -14,6 +14,7 @@ import 'admin_panel_screen.dart';
 import 'shadow_stars_screen.dart';
 import 'gifts_screen.dart';
 import 'premium_screen.dart';
+import 'account_switch_screen.dart';
 
 const List<Map<String, dynamic>> bubbleStyles = [
   {'id': 'rounded', 'name': 'Круглые', 'radius': 16.0},
@@ -802,30 +803,14 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     ListTile(
                       leading: const Icon(Icons.switch_account_outlined),
                       title: const Text('Сменить аккаунт'),
-                      subtitle: const Text('Выйти и войти под другим аккаунтом'),
-                      onTap: () async {
-                        final confirmed = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Сменить аккаунт?'),
-                            content: const Text(
-                              'Текущая сессия будет завершена. После этого можно войти под другим аккаунтом.',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Отмена'),
-                              ),
-                              FilledButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Сменить'),
-                              ),
-                            ],
+                      subtitle: const Text('Выбрать сохранённый аккаунт на этом устройстве'),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AccountSwitchScreen(),
                           ),
                         );
-                        if (confirmed == true) {
-                          await AuthService().logout();
-                        }
                       },
                     ),
                     ListTile(
@@ -858,7 +843,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           ),
                         );
                         if (confirmed == true) {
-                          await AuthService().logout();
+                          await AuthService().logout(forgetSavedAccount: true);
                         }
                       },
                     ),
