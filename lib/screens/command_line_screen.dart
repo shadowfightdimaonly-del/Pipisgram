@@ -13,7 +13,7 @@ const String _supportUserCode = '80930';
 const Map<String, Map<String, dynamic>> _gifts = {
   '1': {
     'name': 'Право редактора сообщений',
-    'price': 120,
+    'price': 125,
     'field': 'hasGiftEditMessages',
   },
   '2': {
