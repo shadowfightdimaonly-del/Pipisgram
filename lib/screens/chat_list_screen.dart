@@ -35,6 +35,18 @@ class ChatListScreen extends StatelessWidget {
       body: StreamBuilder<List<ChatPreview>>(
         stream: chatService.chatsStream(),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Ошибка загрузки чатов: ${snapshot.error}',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+
           final chats = snapshot.data ?? [];
 
           return ListView.builder(
