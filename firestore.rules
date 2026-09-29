@@ -30,79 +30,90 @@ service cloud.firestore {
         ]);
 
       allow update: if request.auth != null
-        && request.auth.uid == userId
         && (
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['avatarUrl'])
-          || request.auth.uid == userId
-          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.hasGiftChangeAvatars == true
-        )
-        && (!request.resource.data.keys().hasAny(['customEmojis'])
-          || request.resource.data.customEmojis.size() <= (
-            request.resource.data.isPremium == true
-              || (
-                request.resource.data.keys().hasAny(['premiumUntil'])
-                && request.resource.data.premiumUntil is timestamp
-                && request.resource.data.premiumUntil > request.time
-              )
-              ? 24 : 12
-          ))
-        && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-          'isAdmin',
-          'shadowStars',
-          'supportWarnings',
-          'lastSupportWarning',
-          'lastSupportActionAt',
-          'supportBlockReason',
-          'supportBlockedUntil',
-          'accountPermanentlyBlocked',
-          'isPremium',
-          'premiumUntil',
-          'hasGiftEditMessages',
-          'hasGiftChangeAvatars',
-          'hasGiftGroupTakeover',
-          'hasGiftChangeUsernames',
-          'hasGiftDoubleGuessAttempts'
-        ]);
+          (
+            request.auth.uid == userId
+            && (!request.resource.data.keys().hasAny(['customEmojis'])
+              || request.resource.data.customEmojis.size() <= (
+                request.resource.data.isPremium == true
+                  || (
+                    request.resource.data.keys().hasAny(['premiumUntil'])
+                    && request.resource.data.premiumUntil is timestamp
+                    && request.resource.data.premiumUntil > request.time
+                  )
+                  ? 24 : 12
+              ))
+            && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+              'isAdmin',
+              'shadowStars',
+              'supportWarnings',
+              'lastSupportWarning',
+              'lastSupportActionAt',
+              'supportBlockReason',
+              'supportBlockedUntil',
+              'accountPermanentlyBlocked',
+              'isPremium',
+              'premiumUntil',
+              'hasGiftEditMessages',
+              'hasGiftChangeAvatars',
+              'hasGiftGroupTakeover',
+              'hasGiftChangeUsernames',
+              'hasGiftDoubleGuessAttempts'
+            ])
+          )
+          ||
+          (
+            request.auth.uid != userId
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['avatarUrl'])
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.hasGiftChangeAvatars == true
+          )
+        );
 
       allow delete: if false;
     }
 
     match /chats/{chatId} {
-      allow read: if request.auth != null &&
-        request.auth.uid in resource.data.participants;
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.participants;
 
       allow create: if request.auth != null;
 
       allow update: if request.auth != null
         && request.auth.uid in resource.data.participants
-        && (
-          !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-            'participants'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'lastMessage',
+          'lastMessageTime',
+          'chatBackgroundUrl',
+          'chatBackgroundColor',
+          'chatListColor',
+          'chatListDecoration'
+        ])
+        || (
+          request.auth != null
+          && request.auth.uid in resource.data.participants
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'unread_\$(request.auth.uid)'
           ])
-          || (
-            request.resource.data.createdBy == resource.data.createdBy
-            && request.resource.data.participants.size() < resource.data.participants.size()
-            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.hasGiftGroupTakeover == true
-            && request.auth.uid in request.resource.data.participants
-            && resource.data.createdBy in request.resource.data.participants
-          )
         );
 
-      allow create: if request.auth != null;
-
       match /messages/{messageId} {
-        allow read: if request.auth != null;
-        allow create: if request.auth != null
+        allow read: if request.auth != null
           && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+
+        allow create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+          && request.resource.data.senderId == request.auth.uid;
+
         allow update: if request.auth != null
           && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+          && resource.data.senderId == request.auth.uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'edited'])
-          && (
-            request.resource.data.edited == true
-            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.hasGiftEditMessages == true
-          );
+          && request.resource.data.edited == true
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.hasGiftEditMessages == true;
+
         allow delete: if request.auth != null
-          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+          && resource.data.senderId == request.auth.uid;
       }
     }
 
