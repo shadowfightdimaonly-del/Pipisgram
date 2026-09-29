@@ -49,7 +49,14 @@ service cloud.firestore {
           'lastSupportActionAt',
           'supportBlockReason',
           'supportBlockedUntil',
-          'accountPermanentlyBlocked'
+          'accountPermanentlyBlocked',
+          'isPremium',
+          'premiumUntil',
+          'hasGiftEditMessages',
+          'hasGiftChangeAvatars',
+          'hasGiftGroupTakeover',
+          'hasGiftChangeUsernames',
+          'hasGiftDoubleGuessAttempts'
         ]);
 
       allow delete: if false;
