@@ -2,10 +2,14 @@ import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  static const _savedAccountsKey = 'pipisgram_saved_accounts';
+  static const _storage = FlutterSecureStorage();
 
   User? get currentUser => _auth.currentUser;
 
@@ -49,6 +53,7 @@ class AuthService {
       });
 
       await OneSignal.login(cred.user!.uid);
+      await _saveAccount(email, password, username);
 
       return null;
     } on FirebaseAuthException catch (e) {
@@ -97,6 +102,8 @@ class AuthService {
       }
 
       await OneSignal.login(_auth.currentUser!.uid);
+      final username = (data?['username'] ?? email).toString();
+      await _saveAccount(email, password, username);
 
       return null;
     } on FirebaseAuthException catch (e) {
@@ -114,15 +121,57 @@ class AuthService {
     }
   }
 
-  Future<void> logout() async {
+  Future<void> logout({bool forgetSavedAccount = false}) async {
     if (currentUser != null) {
       await _db.collection('users').doc(currentUser!.uid).update({
         'online': false,
         'lastSeen': DateTime.now().millisecondsSinceEpoch,
       });
     }
+    final email = currentUser?.email;
     await OneSignal.logout();
     await _auth.signOut();
+    if (forgetSavedAccount && email != null) {
+      await removeSavedAccount(email);
+    }
+  }
+
+  Future<List<Map<String, String>>> savedAccounts() async {
+    final raw = await _storage.read(key: _savedAccountsKey);
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      final list = jsonDecode(raw) as List;
+      return list
+          .whereType<Map>()
+          .map((e) => e.map((key, value) => MapEntry(key.toString(), value.toString())))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> _saveAccount(String email, String password, String username) async {
+    final accounts = await savedAccounts();
+    accounts.removeWhere((a) => a['email']?.toLowerCase() == email.toLowerCase());
+    accounts.insert(0, {
+      'email': email.trim(),
+      'password': password,
+      'username': username,
+    });
+    await _storage.write(key: _savedAccountsKey, value: jsonEncode(accounts));
+  }
+
+  Future<void> removeSavedAccount(String email) async {
+    final accounts = await savedAccounts();
+    accounts.removeWhere((a) => a['email']?.toLowerCase() == email.toLowerCase());
+    await _storage.write(key: _savedAccountsKey, value: jsonEncode(accounts));
+  }
+
+  Future<String?> loginSavedAccount(Map<String, String> account) async {
+    final email = account['email'] ?? '';
+    final password = account['password'] ?? '';
+    if (email.isEmpty || password.isEmpty) return 'Данные сохранённого аккаунта повреждены';
+    return login(email, password);
   }
 
 /// Проверяет и довыдаёт userCode при каждом открытии приложения —
