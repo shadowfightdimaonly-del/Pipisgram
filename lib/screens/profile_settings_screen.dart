@@ -11,6 +11,7 @@ import 'proxy_settings_screen.dart';
 import 'custom_emoji_screen.dart';
 import 'message_bubble_appearance_screen.dart';
 import 'admin_panel_screen.dart';
+import 'shadow_stars_screen.dart';
 
 const List<Map<String, dynamic>> bubbleStyles = [
   {'id': 'rounded', 'name': 'Круглые', 'radius': 16.0},
@@ -654,6 +655,21 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       ),
                     ),
                     const Divider(height: 32),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.stars_outlined,
+                        color: Color(0xFF5B1A73),
+                      ),
+                      title: const Text('Теневые звёзды'),
+                      subtitle: const Text('Открыть баланс теневой валюты'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ShadowStarsScreen(),
+                        ),
+                      ),
+                    ),
                     ListTile(
                       leading: const Icon(Icons.vpn_lock_outlined),
                       title: const Text('Настройки прокси'),
