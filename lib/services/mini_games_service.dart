@@ -160,7 +160,11 @@ class MiniGamesService {
   Future<int> getGuessMaxAttempts() async {
     final user = await _db.collection('users').doc(_myUid).get();
     final data = user.data() ?? {};
-    return data['hasGiftDoubleGuessAttempts'] == true ? 6 : 3;
+    final premium = data['isPremium'] == true ||
+        (data['premiumUntil'] is Timestamp &&
+            (data['premiumUntil'] as Timestamp).toDate().isAfter(DateTime.now()));
+    final base = premium ? 6 : 3;
+    return base + (data['hasGiftDoubleGuessAttempts'] == true ? 3 : 0);
   }
 
   Future<void> changeOtherUsername({
