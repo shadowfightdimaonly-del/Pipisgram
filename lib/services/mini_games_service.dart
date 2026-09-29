@@ -20,6 +20,27 @@ class MiniGamesService {
     return doc.data() ?? {};
   }
 
+  Future<bool> isPremiumActive() async {
+    final doc = await _db.collection('users').doc(_myUid).get();
+    final data = doc.data() ?? {};
+    if (data['isPremium'] == true) return true;
+    final until = data['premiumUntil'];
+    return until is Timestamp && until.toDate().isAfter(DateTime.now());
+  }
+
+  Future<int> getClickerMaxTaps() async {
+    return await isPremiumActive() ? 500 : 250;
+  }
+
+  Future<double> getDinoStarsPerJump() async {
+    return await isPremiumActive() ? 1.0 : 0.5;
+  }
+
+  Future<int> getRegisteredUsersCount() async {
+    final result = await economyAction(action: 'registered_users_count');
+    return (result['count'] as num?)?.toInt() ?? 0;
+  }
+
   Future<int> getClickerTapsToday() async {
     final stats = await _getTodayStats('clicker');
     return stats['taps'] ?? 0;
