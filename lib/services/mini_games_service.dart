@@ -261,6 +261,32 @@ class MiniGamesService {
   }
 
 
+  Future<Map<String, dynamic>> getDinoStatus() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('Пользователь не авторизован');
+    }
+
+    final token = await user.getIdToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('Не удалось получить Firebase ID token');
+    }
+
+    final response = await http.post(
+      Uri.parse('$_workerUrl/economy/dino/status'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Dino status failed: ${response.statusCode}');
+    }
+
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   Future<int> cashOutDinoStars(int jumps) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -278,7 +304,7 @@ class MiniGamesService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({'jumps': jumps, 'date': _today}),
+      body: jsonEncode({'jumps': jumps}),
     );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
