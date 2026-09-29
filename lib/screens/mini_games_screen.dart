@@ -39,7 +39,7 @@ class MiniGamesScreen extends StatelessWidget {
             icon: Icons.casino,
             color: Colors.orangeAccent,
             title: 'Угадай число',
-            subtitle: '1-15 · 1★ за угадывание · 3 попытки в день',
+            subtitle: '1-15 · 1★ за угадывание · 3 попытки в день, с подарком №2 — 6',
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
