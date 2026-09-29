@@ -236,11 +236,11 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Прыжков: $_jumps / $_dinoRemaining',
+                      'Прыжков: $_jumps / $_dinoLimit',
                       style: const TextStyle(color: Colors.white),
                     ),
                     Text(
-                      'Лимит: $_dinoLimit • обновление через ${_formatDinoReset()}',
+                      'Осталось: ${(_dinoLimit - _jumps).clamp(0, _dinoLimit)} • обновление через ${_formatDinoReset()}',
                       style: const TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ],
