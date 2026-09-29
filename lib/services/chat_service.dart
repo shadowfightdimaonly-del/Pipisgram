@@ -13,7 +13,6 @@ class ChatService {
     return _db
         .collection('chats')
         .where('participants', arrayContains: _myUid)
-        .orderBy('lastMessageTime', descending: true)
         .snapshots()
         .asyncMap((snap) async {
       final futures = snap.docs.map((doc) async {
