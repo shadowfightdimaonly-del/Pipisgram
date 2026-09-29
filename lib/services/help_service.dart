@@ -67,34 +67,23 @@ class HelpService {
     final user = auth.currentUser;
     if (user == null) throw Exception('Пользователь не авторизован');
 
-    final token = await user.getIdToken();
-    if (token == null || token.isEmpty) {
-      throw Exception('Не удалось получить Firebase ID token');
+    final adminDoc = await db.collection('users').doc(user.uid).get();
+    if (adminDoc.data()?['isAdmin'] != true) {
+      throw Exception('Доступ запрещён');
     }
 
-    final response = await http.post(
-      Uri.parse('$_workerUrl/admin/action'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({'action': 'list_tickets'}),
-    );
+    final snap = await db
+        .collection('tickets')
+        .orderBy('updatedAt', descending: true)
+        .get();
 
-    Map<String, dynamic> data = {};
-    try {
-      data = jsonDecode(response.body) as Map<String, dynamic>;
-    } catch (_) {}
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(
-        data['error']?.toString() ?? 'Не удалось загрузить обращения',
-      );
-    }
-
-    return (data['tickets'] as List? ?? [])
-        .map((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
+    return snap.docs.map((doc) {
+      final data = doc.data();
+      return {
+        ...data,
+        'id': doc.id,
+      };
+    }).toList();
   }
 
   Future<void> submitBlockAppeal(String email, String text) async {
