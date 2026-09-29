@@ -96,7 +96,7 @@ service cloud.firestore {
           request.auth != null
           && request.auth.uid in resource.data.participants
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'unread_\$(request.auth.uid)'
+            'unread_$(request.auth.uid)'
           ])
         );
 
