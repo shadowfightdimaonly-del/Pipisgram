@@ -490,12 +490,25 @@ class ChatService {
   }
 
   Future<void> editMessage(String chatId, String messageId, String newText) async {
+    final allowed = await hasEditMessagesGift();
+    if (!allowed) {
+      throw Exception('Для этого нужен подарок №1');
+    }
+
+    final text = newText.trim();
+    if (text.isEmpty) {
+      throw Exception('Сообщение не может быть пустым');
+    }
+
     await _db
         .collection('chats')
         .doc(chatId)
         .collection('messages')
         .doc(messageId)
-        .update({'text': newText, 'edited': true});
+        .update({
+          'text': text,
+          'edited': true,
+        });
   }
 
   Future<void> deleteMessage(String chatId, String messageId) async {
