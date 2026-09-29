@@ -23,7 +23,7 @@ class _AccountSwitchScreenState extends State<AccountSwitchScreen> {
     if (_switching) return;
     setState(() => _switching = true);
 
-    final error = await _auth.logout();
+    await _auth.logout();
     final loginError = await _auth.loginSavedAccount(account);
 
     if (!mounted) return;
