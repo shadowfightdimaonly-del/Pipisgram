@@ -51,7 +51,7 @@ class ChatListScreen extends StatelessWidget {
                 );
               }
 
-              if (index == 2) {
+              if (index == 1) {
                 return _SavedMessagesTile(
                   onTap: () async {
                     final chatId = await chatService.getOrCreateChat(myUid);
