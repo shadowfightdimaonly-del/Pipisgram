@@ -13,6 +13,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
   final _service = MiniGamesService();
   int _tapsToday = 0;
   int _availableTaps = 0;
+  int _maxTaps = 250;
   bool _loading = true;
   bool _cashingOut = false;
   DateTime _lastTapAt = DateTime.fromMillisecondsSinceEpoch(0);
@@ -41,10 +42,12 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
     try {
       final taps = await _service.getClickerTapsToday();
       final available = await _service.getClickerAvailableTaps();
+      final maxTaps = await _service.getClickerMaxTaps();
       if (mounted) {
         setState(() {
           _tapsToday = taps;
           _availableTaps = available;
+          _maxTaps = maxTaps;
           _loading = false;
         });
       }
@@ -54,7 +57,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
   }
 
   Future<void> _tap() async {
-    if (_tapsToday >= 1000) return;
+    if (_tapsToday >= _maxTaps) return;
 
     final now = DateTime.now();
     if (now.difference(_lastTapAt) < _tapCooldown) return;
@@ -124,7 +127,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
 
   @override
   Widget build(BuildContext context) {
-    final limitReached = _tapsToday >= 1000;
+    final limitReached = _tapsToday >= _maxTaps;
     final availableStars = (_availableTaps * 3) ~/ 10;
 
     return Scaffold(
@@ -137,7 +140,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      Text('Тапов сегодня (общий лимит): $_tapsToday / 1000',
+                      Text('Тапов сегодня (общий лимит): $_tapsToday / $_maxTaps',
                           style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 4),
                       Text(
