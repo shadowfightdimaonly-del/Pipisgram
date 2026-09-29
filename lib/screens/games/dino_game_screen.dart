@@ -28,6 +28,7 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
   static const double jumpVelocity = -14;
 
   Timer? _loopTimer;
+  Timer? _statusTimer;
   double _dinoY = 0;
   double _velocity = 0;
   bool _isJumping = false;
@@ -37,12 +38,17 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
   int _jumps = 0;
   int _score = 0;
   double _starsPerJump = 0.5;
+  int _dinoLimit = 350;
+  int _dinoRemaining = 350;
+  DateTime? _dinoResetAt;
   List<_Obstacle> _obstacles = [];
   final List<Offset> _stars = [];
 
   @override
   void initState() {
     super.initState();
+    _loadDinoStatus();
+    _statusTimer = Timer.periodic(const Duration(seconds: 1), (_) => _refreshDinoCountdown());
     for (int i = 0; i < 40; i++) {
       _stars.add(Offset(_rnd.nextDouble(), _rnd.nextDouble()));
     }
@@ -51,7 +57,43 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
   @override
   void dispose() {
     _loopTimer?.cancel();
+    _statusTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _loadDinoStatus() async {
+    try {
+      final data = await _service.getDinoStatus();
+      if (!mounted) return;
+      final resetAt = DateTime.tryParse(data['resetAt']?.toString() ?? '');
+      setState(() {
+        _dinoLimit = (data['limit'] as num?)?.toInt() ?? 350;
+        _dinoRemaining = (data['remaining'] as num?)?.toInt() ?? _dinoLimit;
+        _dinoResetAt = resetAt;
+      });
+    } catch (_) {}
+  }
+
+  void _refreshDinoCountdown() {
+    if (!mounted || _dinoResetAt == null) return;
+    if (DateTime.now().isAfter(_dinoResetAt!)) {
+      _loadDinoStatus();
+    } else {
+      setState(() {});
+    }
+  }
+
+  String _formatDinoReset() {
+    if (_dinoResetAt == null) return '...';
+    final left = _dinoResetAt!.difference(DateTime.now());
+    if (left.isNegative) return 'сейчас';
+    final hours = left.inHours;
+    final minutes = left.inMinutes.remainder(60);
+    final seconds = left.inSeconds.remainder(60);
+    if (hours > 0) {
+      return '${hours}ч ${minutes.toString().padLeft(2, '0')}м';
+    }
+    return '${minutes}м ${seconds.toString().padLeft(2, '0')}с';
   }
 
   Future<void> _loadRewardRate() async {
@@ -100,6 +142,10 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
       // Удаляем ушедшие за экран, засчитываем прыжок
       final passed = _obstacles.where((o) => o.x < -0.1).toList();
       for (var _ in passed) {
+        if (_jumps >= _dinoRemaining) {
+          _endGame();
+          return;
+        }
         _jumps++;
         _score++;
       }
@@ -159,6 +205,7 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
 
       if (!mounted) return;
       setState(() => _jumps = 0);
+      await _loadDinoStatus();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Получено $earned★')),
@@ -185,8 +232,19 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Прыжков: $_jumps = ${sessionStars % 1 == 0 ? sessionStars.toInt() : sessionStars}★',
-                    style: const TextStyle(color: Colors.white)),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Прыжков: $_jumps / $_dinoRemaining',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    Text(
+                      'Лимит: $_dinoLimit • обновление через ${_formatDinoReset()}',
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ],
+                ),
                 FilledButton(
                   onPressed: _jumps > 0 ? _cashOut : null,
                   child: Text('Забрать ${sessionStars % 1 == 0 ? sessionStars.toInt() : sessionStars}★'),
