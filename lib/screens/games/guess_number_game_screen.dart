@@ -11,6 +11,7 @@ class GuessNumberGameScreen extends StatefulWidget {
 class _GuessNumberGameScreenState extends State<GuessNumberGameScreen> {
   final _service = MiniGamesService();
   int _attemptsLeft = 3;
+  int _maxAttempts = 3;
   bool _loading = true;
   bool _guessing = false;
   String? _lastResult;
@@ -26,9 +27,11 @@ class _GuessNumberGameScreenState extends State<GuessNumberGameScreen> {
   Future<void> _loadAttempts() async {
     try {
       final left = await _service.getGuessAttemptsLeft();
+      final maxAttempts = await _service.getGuessMaxAttempts();
       if (mounted) {
         setState(() {
           _attemptsLeft = left;
+          _maxAttempts = maxAttempts;
           _loading = false;
         });
       }
@@ -105,7 +108,7 @@ class _GuessNumberGameScreenState extends State<GuessNumberGameScreen> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  Text('Осталось попыток сегодня: $_attemptsLeft / 3',
+                  Text('Осталось попыток сегодня: $_attemptsLeft / $_maxAttempts',
                       style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   const Text(
