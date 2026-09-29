@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/chat_service.dart';
+import '../services/mini_games_service.dart';
 import 'view_profile_screen.dart';
 class GroupInfoScreen extends StatefulWidget {
   final String chatId;
