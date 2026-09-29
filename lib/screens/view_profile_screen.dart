@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/chat_service.dart';
 import '../services/image_upload_service.dart';
+import '../services/mini_games_service.dart';
 
 class ViewProfileScreen extends StatefulWidget {
   final String uid;
@@ -20,6 +22,7 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
   final _db = FirebaseFirestore.instance;
   final _chatService = ChatService();
   bool _hasChangeAvatarGift = false;
+  bool _hasChangeUsernameGift = false;
   bool _uploading = false;
 
   @override
@@ -30,7 +33,14 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
 
   Future<void> _checkGift() async {
     final hasGift = await _chatService.hasChangeAvatarsGift();
-    if (mounted) setState(() => _hasChangeAvatarGift = hasGift);
+    final myDoc = await _db.collection('users').doc(FirebaseAuth.instance.currentUser!.uid).get();
+    final usernameGift = myDoc.data()?['hasGiftChangeUsernames'] == true;
+    if (mounted) {
+      setState(() {
+        _hasChangeAvatarGift = hasGift;
+        _hasChangeUsernameGift = usernameGift;
+      });
+    }
   }
 
   Future<void> _pickAndSetAvatar() async {
@@ -58,6 +68,68 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
     }
 
     if (mounted) setState(() => _uploading = false);
+  }
+
+  Future<void> _changeUsername() async {
+    final controller = TextEditingController();
+    try {
+      final newUsername = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Изменить ник'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            maxLength: 32,
+            decoration: const InputDecoration(
+              prefixText: '@',
+              hintText: 'Новый ник',
+              helperText: '3–32 символа: буквы, цифры и _',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Отмена'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final value = controller.text.trim();
+                if (value.length >= 3) {
+                  Navigator.of(dialogContext).pop(value);
+                }
+              },
+              child: const Text('Изменить'),
+            ),
+          ],
+        ),
+      );
+
+      if (newUsername == null || !mounted) return;
+
+      await MiniGamesService().changeOtherUsername(
+        targetUid: widget.uid,
+        newUsername: newUsername,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ник изменён')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.toString().replaceFirst('Exception: ', ''),
+            ),
+          ),
+        );
+      }
+    } finally {
+      controller.dispose();
+    }
   }
 
   @override
@@ -95,6 +167,8 @@ class _ViewProfileScreenState extends State<ViewProfileScreen> {
             visibleGifts.add(_giftChip(Icons.warning_amber_rounded,
                 'Власть над группами', Colors.deepOrange));
           }
+
+          final targetUsername = username.toString();
 
           return ListView(
             padding: const EdgeInsets.all(16),
