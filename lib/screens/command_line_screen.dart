@@ -139,8 +139,8 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
   penalty <кол-во> @ник       — штраф звёздами (админ)
   buy_premium                 — купить Premium (${_premiumPrice}★)
   give_premium @ник           — подарить Premium (${_premiumPrice}★ с тебя)
-  buy_gift <1/2/3>            — купить подарок себе
-  gift <1/2/3> @ник           — подарить подарок
+  buy_gift <1-5>                — купить подарок себе
+  gift <1-5> @ник              — подарить подарок
   change_username_other @ник <новый> — сменить чужой юзернейм (подарок 1)
   mini_game                   — начать мини-игру
   support                     — написать в техподдержку''');
@@ -405,7 +405,7 @@ premium: $premiumInfo''');
 
       case 'buy_gift':
         if (parts.length < 2 || !_gifts.containsKey(parts[1])) {
-          _print('используй: buy_gift <1/2/3>');
+          _print('используй: buy_gift <1-5>');
           break;
         }
         await _handleGiftPurchase(giftId: parts[1], targetUsername: null);
@@ -413,7 +413,7 @@ premium: $premiumInfo''');
 
       case 'gift':
         if (parts.length < 3 || !_gifts.containsKey(parts[1])) {
-          _print('используй: gift <1/2/3> @username');
+          _print('используй: gift <1-5> @username');
           break;
         }
         await _handleGiftPurchase(giftId: parts[1], targetUsername: parts[2]);
