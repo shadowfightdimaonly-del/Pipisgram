@@ -31,6 +31,11 @@ service cloud.firestore {
 
       allow update: if request.auth != null
         && request.auth.uid == userId
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['avatarUrl'])
+          || request.auth.uid == userId
+          || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.hasGiftChangeAvatars == true
+        )
         && (!request.resource.data.keys().hasAny(['customEmojis'])
           || request.resource.data.customEmojis.size() <= (
             request.resource.data.isPremium == true
