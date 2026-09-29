@@ -489,6 +489,25 @@ class ChatService {
     return doc.data()?['hasGiftChangeAvatars'] == true;
   }
 
+  Future<void> changeOtherAvatar(String targetUid, String avatarUrl) async {
+    if (targetUid == _myUid) {
+      throw Exception('Для своей аватарки используй обычные настройки профиля');
+    }
+
+    final allowed = await hasChangeAvatarsGift();
+    if (!allowed) {
+      throw Exception('Для этого нужен подарок №2');
+    }
+
+    if (avatarUrl.trim().isEmpty) {
+      throw Exception('Некорректная ссылка на аватарку');
+    }
+
+    await _db.collection('users').doc(targetUid).update({
+      'avatarUrl': avatarUrl.trim(),
+    });
+  }
+
   Future<void> editMessage(String chatId, String messageId, String newText) async {
     final allowed = await hasEditMessagesGift();
     if (!allowed) {
