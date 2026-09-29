@@ -12,14 +12,14 @@ const int _premiumPrice = 750;
 const String _supportUserCode = '80930';
 const Map<String, Map<String, dynamic>> _gifts = {
   '1': {
-    'name': 'Право редактора сообщений',
-    'price': 120,
-    'field': 'hasGiftEditMessages',
+    'name': 'Право менять чужие юзернеймы',
+    'price': 150,
+    'field': 'hasGiftChangeUsernames',
   },
   '2': {
-    'name': 'Право менять чужие аватарки',
-    'price': 215,
-    'field': 'hasGiftChangeAvatars',
+    'name': 'Двойные попытки в угадайке',
+    'price': 235,
+    'field': 'hasGiftDoubleGuessAttempts',
   },
   '3': {
     'name': 'Власть над группами',
@@ -131,6 +131,7 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
   give_premium @ник           — подарить Premium (${_premiumPrice}★ с тебя)
   buy_gift <1/2/3>            — купить подарок себе
   gift <1/2/3> @ник           — подарить подарок
+  change_username_other @ник <новый> — сменить чужой юзернейм (подарок 1)
   mini_game                   — начать мини-игру
   support                     — написать в техподдержку''');
         break;
@@ -406,6 +407,27 @@ premium: $premiumInfo''');
           break;
         }
         await _handleGiftPurchase(giftId: parts[1], targetUsername: parts[2]);
+        break;
+
+      case 'change_username_other':
+        if (parts.length < 3) {
+          _print('используй: change_username_other @username новый_username');
+          break;
+        }
+        final targetDoc = await _findUserByUsername(parts[1]);
+        if (targetDoc == null) {
+          _print('пользователь ${parts[1]} не найден');
+          break;
+        }
+        try {
+          await _gamesService.changeOtherUsername(
+            targetUid: targetDoc.id,
+            newUsername: parts[2],
+          );
+          _print('юзернейм ${parts[1]} изменён на @${parts[2]}');
+        } catch (e) {
+          _print('ошибка: $e');
+        }
         break;
 
       case 'mini_game':
