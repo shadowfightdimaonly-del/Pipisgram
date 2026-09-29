@@ -19,11 +19,28 @@ service cloud.firestore {
           'lastSupportActionAt',
           'supportBlockReason',
           'supportBlockedUntil',
-          'accountPermanentlyBlocked'
+          'accountPermanentlyBlocked',
+          'isPremium',
+          'premiumUntil',
+          'hasGiftEditMessages',
+          'hasGiftChangeAvatars',
+          'hasGiftGroupTakeover',
+          'hasGiftChangeUsernames',
+          'hasGiftDoubleGuessAttempts'
         ]);
 
       allow update: if request.auth != null
         && request.auth.uid == userId
+        && (!request.resource.data.keys().hasAny(['customEmojis'])
+          || request.resource.data.customEmojis.size() <= (
+            request.resource.data.isPremium == true
+              || (
+                request.resource.data.keys().hasAny(['premiumUntil'])
+                && request.resource.data.premiumUntil is timestamp
+                && request.resource.data.premiumUntil > request.time
+              )
+              ? 24 : 12
+          ))
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
           'isAdmin',
           'shadowStars',
