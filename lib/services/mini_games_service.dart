@@ -76,7 +76,8 @@ class MiniGamesService {
 
   Future<int> getClickerAvailableTaps() async {
     final stats = await _getTodayStats('clicker');
-    final taps = ((stats['taps'] ?? 0) as num).toInt().clamp(0, 1000);
+    final maxTaps = await getClickerMaxTaps();
+    final taps = ((stats['taps'] ?? 0) as num).toInt().clamp(0, maxTaps);
     final cashedOutTaps =
         ((stats['cashedOutTaps'] ?? 0) as num).toInt().clamp(0, taps);
     return taps - cashedOutTaps;
