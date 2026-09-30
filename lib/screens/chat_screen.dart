@@ -108,12 +108,12 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _initializeReadState() async {
-    await _captureUnreadMessages();
-    if (!mounted) return;
-    await _chatService.markMessagesAsRead(widget.chatId);
+    final unreadIds = await _captureUnreadMessages();
+    if (!mounted || unreadIds.isEmpty) return;
+    await _chatService.markMessagesAsRead(widget.chatId, unreadIds);
   }
 
-  Future<void> _captureUnreadMessages() async {
+  Future<List<String>> _captureUnreadMessages() async {
     final snap = await FirebaseFirestore.instance
         .collection('chats')
         .doc(widget.chatId)
@@ -121,17 +121,20 @@ class _ChatScreenState extends State<ChatScreen> {
         .where('read', isEqualTo: false)
         .get();
 
-    if (!mounted) return;
+    if (!mounted) return [];
+
+    final unreadIds = snap.docs
+        .where((doc) => doc.data()['senderId'] != _myUid)
+        .map((doc) => doc.id)
+        .toList();
 
     setState(() {
       _initialUnreadMessageIds
         ..clear()
-        ..addAll(
-          snap.docs
-              .where((doc) => doc.data()['senderId'] != _myUid)
-              .map((doc) => doc.id),
-        );
+        ..addAll(unreadIds);
     });
+
+    return unreadIds;
   }
 
   void _watchConnectivity() {
@@ -871,45 +874,16 @@ class _ChatScreenState extends State<ChatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (_isGroup && !isMine)
-                    StreamBuilder<DocumentSnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(msg.senderId)
-                          .snapshots(),
-                      builder: (context, snap) {
-                        final senderData =
-                            snap.data?.data() as Map<String, dynamic>?;
-                        final senderUsername =
-                            senderData?['username'] ??
-                                msg.senderUsername ??
-                                'неизвестный';
-                        final isAdmin = senderData?['isAdmin'] == true;
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '@$senderUsername',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color:
-                                      Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
-                              if (isAdmin) ...[
-                                const SizedBox(width: 4),
-                                const Icon(
-                                  Icons.verified,
-                                  color: Colors.lightBlueAccent,
-                                  size: 14,
-                                ),
-                              ],
-                            ],
-                          ),
-                        );
-                      },
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Text(
+                        '@${msg.senderUsername ?? 'неизвестный'}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
                     ),
                   _buildMessageContent(msg, isMine),
                   const SizedBox(height: 2),
@@ -1121,12 +1095,15 @@ class _ChatScreenState extends State<ChatScreen> {
                       .map((m) => m.id)
                       .toList();
                   if (unreadIncomingIds.isNotEmpty) {
-                    unawaited(
-                      _chatService.markMessagesAsRead(
-                        widget.chatId,
-                        unreadIncomingIds,
-                      ),
-                    );
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) return;
+                      unawaited(
+                        _chatService.markMessagesAsRead(
+                          widget.chatId,
+                          unreadIncomingIds,
+                        ),
+                      );
+                    });
                   }
                 }
                 final pendingCount = _pendingUploads.length;
