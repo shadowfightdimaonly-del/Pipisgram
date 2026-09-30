@@ -168,7 +168,8 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if request.auth != null
         && (
-          resource.data.userId == request.auth.uid
+          resource == null
+          || resource.data.userId == request.auth.uid
           || (
             resource.data.senderId == request.auth.uid
             && !existsAfter(
