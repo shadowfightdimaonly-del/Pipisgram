@@ -12,7 +12,7 @@ class ImageUploadService {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return null;
 
-      final token = await user.getIdToken();
+      final token = await user.getIdToken(true);
       if (token == null || token.isEmpty) return null;
 
       final uri = Uri.parse('$_workerUrl/upload').replace(
