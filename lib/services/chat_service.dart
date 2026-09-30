@@ -153,39 +153,48 @@ class ChatService {
             snap.docs.map((d) => Message.fromMap(d.id, d.data())).toList());
   }
 
-  /// Отмечает как прочитанные все чужие сообщения в чате
-  Future<void> markMessagesAsRead(String chatId) async {
-    final unread = await _db
-        .collection('chats')
-        .doc(chatId)
-        .collection('messages')
-        .where('read', isEqualTo: false)
-        .get();
+  /// Отмечает переданные непрочитанные сообщения как прочитанные.
+  /// Вызывается только когда в актуальном snapshot действительно есть
+  /// непрочитанные сообщения от собеседника.
+  Future<void> markMessagesAsRead(
+    String chatId,
+    Iterable<String> messageIds,
+  ) async {
+    final ids = messageIds.toSet();
+    if (ids.isEmpty) return;
 
-    for (var doc in unread.docs) {
-      final data = doc.data();
-      if (data['senderId'] != _myUid) {
-        await doc.reference.update({'read': true});
-      }
+    final batch = _db.batch();
+    final messagesRef = _db.collection('chats').doc(chatId).collection('messages');
+
+    for (final messageId in ids) {
+      batch.update(messagesRef.doc(messageId), {'read': true});
     }
 
-    await _db.collection('chats').doc(chatId).update({
+    batch.update(_db.collection('chats').doc(chatId), {
       'unread_$_myUid': 0,
     });
+
+    await batch.commit();
   }
 
+  /// Увеличивает счётчики непрочитанных одним обновлением документа чата.
+  /// Старый вариант делал отдельный network write для каждого получателя.
   Future<void> _incrementUnreadForRecipients(String chatId) async {
     final chatDoc = await _db.collection('chats').doc(chatId).get();
     final chatData = chatDoc.data();
     if (chatData == null) return;
 
     final participants = List<String>.from(chatData['participants'] ?? []);
-    final recipients = participants.where((uid) => uid != _myUid);
+    final updates = <String, dynamic>{};
 
-    for (final uid in recipients) {
-      await chatDoc.reference.update({
-        'unread_$uid': FieldValue.increment(1),
-      });
+    for (final uid in participants) {
+      if (uid != _myUid) {
+        updates['unread_$uid'] = FieldValue.increment(1);
+      }
+    }
+
+    if (updates.isNotEmpty) {
+      await chatDoc.reference.update(updates);
     }
   }
 
