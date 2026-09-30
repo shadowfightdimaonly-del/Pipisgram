@@ -52,7 +52,7 @@ class MiniGamesService {
       throw Exception('Пользователь не авторизован');
     }
 
-    final token = await user.getIdToken();
+    final token = await user.getIdToken(true);
     if (token == null || token.isEmpty) {
       throw Exception('Не удалось получить Firebase ID token');
     }
@@ -89,7 +89,7 @@ class MiniGamesService {
       throw Exception('Пользователь не авторизован');
     }
 
-    final token = await user.getIdToken();
+    final token = await user.getIdToken(true);
     if (token == null || token.isEmpty) {
       throw Exception('Не удалось получить Firebase ID token');
     }
@@ -190,7 +190,7 @@ class MiniGamesService {
       throw Exception('Пользователь не авторизован');
     }
 
-    final token = await user.getIdToken();
+    final token = await user.getIdToken(true);
     if (token == null || token.isEmpty) {
       throw Exception('Не удалось получить Firebase ID token');
     }
@@ -236,7 +236,7 @@ class MiniGamesService {
       throw Exception('Пользователь не авторизован');
     }
 
-    final token = await user.getIdToken();
+    final token = await user.getIdToken(true);
     if (token == null || token.isEmpty) {
       throw Exception('Не удалось получить Firebase ID token');
     }
@@ -267,7 +267,7 @@ class MiniGamesService {
       throw Exception('Пользователь не авторизован');
     }
 
-    final token = await user.getIdToken();
+    final token = await user.getIdToken(true);
     if (token == null || token.isEmpty) {
       throw Exception('Не удалось получить Firebase ID token');
     }
@@ -293,7 +293,7 @@ class MiniGamesService {
       throw Exception('Пользователь не авторизован');
     }
 
-    final token = await user.getIdToken();
+    final token = await user.getIdToken(true);
     if (token == null || token.isEmpty) {
       throw Exception('Не удалось получить Firebase ID token');
     }
