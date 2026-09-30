@@ -6,7 +6,12 @@ import 'dart:io';
 
 import '../services/image_upload_service.dart';
 
-import 'profile_settings_screen.dart';
+const List<Map<String, dynamic>> bubbleStyles = [
+  {'id': 'rounded', 'name': 'Круглые', 'radius': 16.0},
+  {'id': 'sharp', 'name': 'Острые', 'radius': 4.0},
+  {'id': 'pill', 'name': 'Овальные', 'radius': 24.0},
+  {'id': 'square', 'name': 'Квадратные', 'radius': 0.0},
+];
 
 class MessageBubbleAppearanceScreen extends StatefulWidget {
   const MessageBubbleAppearanceScreen({super.key});
