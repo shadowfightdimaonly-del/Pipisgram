@@ -7,7 +7,7 @@ service cloud.firestore {
     // Writes are restricted to the user's own document.
     // Protected fields such as isAdmin cannot be changed by the client.
     match /users/{userId} {
-      allow read: if true;
+      allow read: if request.auth != null;
 
       allow create: if request.auth != null
         && request.auth.uid == userId
