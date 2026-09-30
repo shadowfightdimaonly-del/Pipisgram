@@ -100,10 +100,8 @@ service cloud.firestore {
           && request.auth.uid in resource.data.participants
           && request.resource.data.diff(resource.data).affectedKeys().size() == 1
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'unread_$(resource.data.participants[0])'
+            'unread_$(request.auth.uid)'
           ])
-          && request.resource.data['unread_$(resource.data.participants[0])']
-              == resource.data['unread_$(resource.data.participants[0])'] + 1
         );
 
       match /messages/{messageId} {
