@@ -251,6 +251,7 @@ class ChatService {
     final messagesRef =
         _db.collection('chats').doc(chatId).collection('messages');
     final unreadRef = _db.collection('chatUnread');
+    final chatRef = _db.collection('chats').doc(chatId);
     final idList = ids.toList();
 
     // Одновременно отмечаем сообщения прочитанными и удаляем
@@ -263,6 +264,9 @@ class ChatService {
         batch.update(messagesRef.doc(messageId), {'read': true});
         batch.delete(unreadRef.doc(chatId + '_' + messageId + '_' + _myUid));
       }
+      batch.update(chatRef, {
+        'unreadVersion': FieldValue.increment(1),
+      });
 
       await batch.commit();
     }
