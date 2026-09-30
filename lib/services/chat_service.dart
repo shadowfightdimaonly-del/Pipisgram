@@ -78,22 +78,28 @@ class ChatService {
           continue;
         }
 
-        final messageDoc = await _db
-            .collection('chats')
-            .doc(chatId)
-            .collection('messages')
-            .doc(messageId)
-            .get();
+        try {
+          final messageDoc = await _db
+              .collection('chats')
+              .doc(chatId)
+              .collection('messages')
+              .doc(messageId)
+              .get();
 
-        final messageData = messageDoc.data();
-        if (!messageDoc.exists ||
-            messageData == null ||
-            messageData['read'] == true ||
-            messageData['senderId'] == _myUid) {
+          final messageData = messageDoc.data();
+          if (!messageDoc.exists ||
+              messageData == null ||
+              messageData['read'] == true ||
+              messageData['senderId'] == _myUid) {
+            continue;
+          }
+
+          unreadByChatId[chatId] = (unreadByChatId[chatId] ?? 0) + 1;
+        } catch (_) {
+          // Устаревшая запись может ссылаться на удалённый чат.
+          // Она не должна ломать весь список чатов.
           continue;
         }
-
-        unreadByChatId[chatId] = (unreadByChatId[chatId] ?? 0) + 1;
       }
 
       final chats = <ChatPreview>[];
