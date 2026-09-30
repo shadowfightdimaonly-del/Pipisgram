@@ -74,10 +74,11 @@ class ShadowStarsScreen extends StatelessWidget {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.star,
-                            color: Color(0xFF4A155D),
-                            size: 28,
+                          Image.asset(
+                            'assets/images/shadow_star.webp',
+                            width: 28,
+                            height: 28,
+                            fit: BoxFit.contain,
                           ),
                           const SizedBox(width: 8),
                           Text(
