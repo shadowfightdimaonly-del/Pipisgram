@@ -1,43 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'mini_games_screen.dart';
 import 'chat_screen.dart';
-import 'support_screen.dart';
-import '../services/mini_games_service.dart';
-import '../services/chat_service.dart';
-import '../services/push_notification_service.dart';
-
-const int _premiumPrice = 750;
-const String _supportUserCode = '80930';
-const Map<String, Map<String, dynamic>> _gifts = {
-  '1': {
-    'name': 'Право редактора сообщений',
-    'price': 125,
-    'field': 'hasGiftEditMessages',
-  },
-  '2': {
-    'name': 'Право менять чужие аватарки',
-    'price': 215,
-    'field': 'hasGiftChangeAvatars',
-  },
-  '3': {
-    'name': 'Власть над группами',
-    'price': 570,
-    'field': 'hasGiftGroupTakeover',
-    'requiresPremium': true,
-  },
-  '4': {
-    'name': 'Право менять чужие юзернеймы',
-    'price': 150,
-    'field': 'hasGiftChangeUsernames',
-  },
-  '5': {
-    'name': 'Двойные попытки в угадайке',
-    'price': 235,
-    'field': 'hasGiftDoubleGuessAttempts',
-  },
-};
 
 const Map<String, Map<String, dynamic>> _promoCodes = {
   'shadow_star_gift210': {'type': 'stars', 'amount': 15},
@@ -57,7 +21,6 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
   final _inputCtrl = TextEditingController();
   final _db = FirebaseFirestore.instance;
   final _myUid = FirebaseAuth.instance.currentUser!.uid;
-  final _gamesService = MiniGamesService();
 
   final List<String> _log = [
     '> система готова. напиши "help" для списка команд',
@@ -129,21 +92,7 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
 доступные команды:
   whoami                    — свой публичный профиль
   whoami @ник                — профиль другого пользователя
-  ping                        — проверить связь с Firestore
-  clear                       — очистить консоль
-  users count                 — сколько всего зарегистрировано
-  version                     — версия приложения
-  balance                     — сколько у тебя звёзд и статус premium
-  change_username <новый>     — сменить юзернейм
-  shadow_star <кол-во> @ник   — подарить звёзды
-  penalty <кол-во> @ник       — штраф звёздами (админ)
-  buy_premium                 — купить Premium (${_premiumPrice}★)
-  give_premium @ник           — подарить Premium (${_premiumPrice}★ с тебя)
-  buy_gift <1-5>                — купить подарок себе
-  gift <1-5> @ник              — подарить подарок
-  change_username_other @ник <новый> — сменить чужой юзернейм (подарок 1)
-  mini_game                   — начать мини-игру
-  support                     — написать в техподдержку''');
+''');
         break;
 
       case 'whoami':
@@ -476,56 +425,6 @@ premium: $premiumInfo''');
     }
   }
 
-  Future<void> _handleGiftPurchase({
-    required String giftId,
-    required String? targetUsername,
-  }) async {
-    final gift = _gifts[giftId]!;
-    final price = gift['price'] as int;
-    final requiresPremium = gift['requiresPremium'] == true;
-    final buyerData = await _myData();
-    final buyerStars = (buyerData?['shadowStars'] ?? 0) as int;
-
-    if (requiresPremium && !_isPremiumActive(buyerData)) {
-      _print('для покупки этого подарка нужен активный Pipisgram Premium');
-      return;
-    }
-    if (buyerStars < price) {
-      _print('недостаточно звёзд (нужно $price★, у тебя ${buyerStars}★)');
-      return;
-    }
-
-    String? targetUid;
-    if (targetUsername != null) {
-      final targetDoc = await _findUserByUsername(targetUsername);
-      if (targetDoc == null) {
-        _print('пользователь $targetUsername не найден');
-        return;
-      }
-      targetUid = targetDoc.id;
-    }
-
-    try {
-      await _gamesService.economyAction(
-        action: targetUid == null ? 'buy_gift' : 'gift',
-        giftId: giftId,
-        targetUid: targetUid,
-      );
-      if (targetUid != null) {
-        final myUsernameForGiftItem = buyerData?['username'] ?? 'кто-то';
-        PushNotificationService.sendToUser(
-          targetUid: targetUid,
-          title: 'Подарок! 🎁',
-          body: '@$myUsernameForGiftItem подарил тебе "${gift['name']}"',
-        );
-      }
-      _print(targetUsername == null
-          ? '"${gift['name']}" куплен себе за $price★'
-          : '"${gift['name']}" подарен $targetUsername за $price★');
-    } catch (e) {
-      _print('ошибка: $e');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
