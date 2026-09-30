@@ -59,7 +59,7 @@ class ShadowStarsScreen extends StatelessWidget {
                           'assets/images/shadow_star.webp',
                           width: 250,
                           height: 220,
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                         ),
                       ),
                       const SizedBox(height: 18),
