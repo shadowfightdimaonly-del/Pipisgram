@@ -315,6 +315,7 @@ class ChatService {
 
     final messageRef = msgRef.doc();
     await messageRef.set({
+      'chatId': chatId,
       'senderId': _myUid,
       'senderUsername': myUsername,
       'text': '',
@@ -374,6 +375,7 @@ class ChatService {
 
     final messageRef = msgRef.doc();
     await messageRef.set({
+      'chatId': chatId,
       'senderId': _myUid,
       'senderUsername': myUsername,
       'text': fileName,
@@ -428,6 +430,7 @@ class ChatService {
 
     final messageRef = msgRef.doc();
     await messageRef.set({
+      'chatId': chatId,
       'senderId': _myUid,
       'senderUsername': myUsername,
       'text': '',
@@ -456,6 +459,7 @@ class ChatService {
 
     final messageRef = msgRef.doc();
     await messageRef.set({
+      'chatId': chatId,
       'senderId': _myUid,
       'senderUsername': myUsername,
       'text': fileName,
@@ -515,6 +519,7 @@ class ChatService {
 
     final messageRef = msgRef.doc();
     await messageRef.set({
+      'chatId': chatId,
       'senderId': _myUid,
       'senderUsername': myUsername,
       'text': '',
@@ -543,6 +548,7 @@ class ChatService {
 
     final messageRef = msgRef.doc();
     await messageRef.set({
+      'chatId': chatId,
       'senderId': _myUid,
       'senderUsername': myUsername,
       'text': text,
