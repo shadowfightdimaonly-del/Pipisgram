@@ -93,6 +93,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<_PendingUpload> _pendingUploads = [];
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   final Set<String> _initialUnreadMessageIds = {};
+  final Set<String> _readMarkInFlight = {};
   String? _chatBackgroundUrl;
   int _chatBackgroundColorValue = 0xFF121212;
 
@@ -110,7 +111,21 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _initializeReadState() async {
     final unreadIds = await _captureUnreadMessages();
     if (!mounted || unreadIds.isEmpty) return;
-    await _chatService.markMessagesAsRead(widget.chatId, unreadIds);
+    _markMessagesAsRead(unreadIds);
+  }
+
+  void _markMessagesAsRead(Iterable<String> messageIds) {
+    final ids = messageIds
+        .where((id) => !_readMarkInFlight.contains(id))
+        .toSet();
+    if (ids.isEmpty) return;
+
+    _readMarkInFlight.addAll(ids);
+    unawaited(
+      _chatService
+          .markMessagesAsRead(widget.chatId, ids)
+          .whenComplete(() => _readMarkInFlight.removeAll(ids)),
+    );
   }
 
   Future<List<String>> _captureUnreadMessages() async {
@@ -1097,12 +1112,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   if (unreadIncomingIds.isNotEmpty) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (!mounted) return;
-                      unawaited(
-                        _chatService.markMessagesAsRead(
-                          widget.chatId,
-                          unreadIncomingIds,
-                        ),
-                      );
+                      _markMessagesAsRead(unreadIncomingIds);
                     });
                   }
                 }
