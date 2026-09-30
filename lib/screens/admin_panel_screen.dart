@@ -31,7 +31,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('Пользователь не авторизован');
-      final token = await user.getIdToken();
+      final token = await user.getIdToken(true);
       final response = await http.post(
         Uri.parse(_workerUrl + '/admin/action'),
         headers: {
