@@ -1115,8 +1115,19 @@ class _ChatScreenState extends State<ChatScreen> {
               stream: _chatService.messagesStream(widget.chatId),
               builder: (context, snapshot) {
                 final messages = snapshot.data ?? [];
-                if (snapshot.hasData && messages.isNotEmpty) {
-                  unawaited(_chatService.markMessagesAsRead(widget.chatId));
+                if (snapshot.hasData) {
+                  final unreadIncomingIds = messages
+                      .where((m) => !m.read && m.senderId != _myUid)
+                      .map((m) => m.id)
+                      .toList();
+                  if (unreadIncomingIds.isNotEmpty) {
+                    unawaited(
+                      _chatService.markMessagesAsRead(
+                        widget.chatId,
+                        unreadIncomingIds,
+                      ),
+                    );
+                  }
                 }
                 final pendingCount = _pendingUploads.length;
                 if (messages.isEmpty && pendingCount == 0) {
