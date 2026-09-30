@@ -659,12 +659,23 @@ class ChatService {
   }
 
   Future<void> deleteMessage(String chatId, String messageId) async {
-    await _db
-        .collection('chats')
-        .doc(chatId)
-        .collection('messages')
-        .doc(messageId)
-        .delete();
+    final chatRef = _db.collection('chats').doc(chatId);
+    final chatDoc = await chatRef.get();
+    final chatData = chatDoc.data();
+    if (chatData == null) return;
+
+    final participants = List<String>.from(chatData['participants'] ?? []);
+    final batch = _db.batch();
+
+    batch.delete(chatRef.collection('messages').doc(messageId));
+
+    final unreadRef = _db.collection('chatUnread');
+    for (final uid in participants) {
+      if (uid == _myUid) continue;
+      batch.delete(unreadRef.doc(chatId + '_' + messageId + '_' + uid));
+    }
+
+    await batch.commit();
   }
 
   Future<void> removeParticipant(String chatId, String targetUid) async {
