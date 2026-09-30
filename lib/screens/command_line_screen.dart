@@ -42,6 +42,11 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
   }
 
 
+  Future<Map<String, dynamic>?> _myData() async {
+    final doc = await _db.collection('users').doc(_myUid).get();
+    return doc.data();
+  }
+
   Future<DocumentSnapshot?> _findUserByUsername(String rawUsername) async {
     final username = rawUsername.replaceFirst('@', '').trim();
     if (username.isEmpty) return null;
