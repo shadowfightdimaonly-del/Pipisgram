@@ -683,9 +683,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       ),
                     ),
                     ListTile(
-                      leading: const Icon(
-                        Icons.stars_outlined,
-                        color: Color(0xFF5B1A73),
+                      leading: Image.asset(
+                        'assets/images/shadow_star.webp',
+                        width: 28,
+                        height: 28,
+                        fit: BoxFit.contain,
                       ),
                       title: const Text('Теневые звёзды'),
                       subtitle: const Text('Открыть баланс теневой валюты'),
