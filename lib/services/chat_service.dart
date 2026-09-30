@@ -15,48 +15,120 @@ class ChatService {
         .where('participants', arrayContains: _myUid)
         .snapshots()
         .asyncMap((snap) async {
-      final futures = snap.docs.map((doc) async {
+      final userUids = <String>{};
+
+      for (final doc in snap.docs) {
         final data = doc.data();
-        final participants = List<String>.from(data['participants']);
+        final participants = List<String>.from(data['participants'] ?? []);
+        final isSelfChat = data['isSelfChat'] == true;
+        final isGroup = data['isGroup'] == true;
+
+        if (!isGroup && !isSelfChat) {
+          final otherUid = participants.firstWhere(
+            (id) => id != _myUid,
+            orElse: () => '',
+          );
+          if (otherUid.isNotEmpty) {
+            userUids.add(otherUid);
+          }
+        }
+      }
+
+      // Вместо отдельного users/{uid}.get() для каждого чата читаем
+      // профили пакетами. Firestore ограничивает whereIn размером списка,
+      // поэтому режем на безопасные группы.
+      final userDataByUid = <String, Map<String, dynamic>>{};
+
+      final uidList = userUids.toList();
+      for (var start = 0; start < uidList.length; start += 30) {
+        final end = (start + 30 < uidList.length)
+            ? start + 30
+            : uidList.length;
+        final chunk = uidList.sublist(start, end);
+
+        if (chunk.isEmpty) continue;
+
+        final userSnap = await _db
+            .collection('users')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+
+        for (final userDoc in userSnap.docs) {
+          userDataByUid[userDoc.id] = userDoc.data();
+        }
+      }
+
+      final chats = <ChatPreview>[];
+
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        final participants =
+            List<String>.from(data['participants'] ?? []);
         final isSelfChat = data['isSelfChat'] == true;
         final isGroup = data['isGroup'] == true;
         final lastMessage = data['lastMessage'] ?? '';
         final lastMessageTime =
-            (data['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime.now();
-        final unreadCount = (data['unread_$_myUid'] ?? 0) as int;
+            (data['lastMessageTime'] as Timestamp?)?.toDate() ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+        final unreadValue = data['unread_$_myUid'];
+        final unreadCount = unreadValue is num ? unreadValue.toInt() : 0;
 
         if (isGroup) {
-          return ChatPreview(
-            id: doc.id, participants: participants, lastMessage: lastMessage,
-            lastMessageTime: lastMessageTime,
-            otherUsername: data['groupName'] ?? 'Группа', otherUid: '',
-            otherProfileColor: data['groupColor'] ?? 0xFF546E7A,
-            unreadCount: unreadCount,
-            isGroup: true,
-            chatListColor: (data['chatListColor'] ?? 0xFF546E7A) as int,
-            chatListDecoration: data['chatListDecoration'] ?? 'none',
+          chats.add(
+            ChatPreview(
+              id: doc.id,
+              participants: participants,
+              lastMessage: lastMessage,
+              lastMessageTime: lastMessageTime,
+              otherUsername: data['groupName'] ?? 'Группа',
+              otherUid: '',
+              otherProfileColor:
+                  (data['groupColor'] ?? 0xFF546E7A) as int,
+              unreadCount: unreadCount,
+              isGroup: true,
+              chatListColor:
+                  (data['chatListColor'] ?? 0xFF546E7A) as int,
+              chatListDecoration:
+                  data['chatListDecoration'] ?? 'none',
+            ),
           );
+          continue;
         }
 
         final otherUid = isSelfChat
             ? _myUid
-            : participants.firstWhere((id) => id != _myUid, orElse: () => _myUid);
-        final otherUserDoc = await _db.collection('users').doc(otherUid).get();
-        final otherUserData = otherUserDoc.data() ?? {};
+            : participants.firstWhere(
+                (id) => id != _myUid,
+                orElse: () => _myUid,
+              );
+        final otherUserData =
+            isSelfChat ? <String, dynamic>{} : (userDataByUid[otherUid] ?? {});
 
-        return ChatPreview(
-          id: doc.id, participants: participants, lastMessage: lastMessage,
-          lastMessageTime: lastMessageTime,
-          otherUsername: isSelfChat ? 'Избранное' : (otherUserData['username'] ?? 'Неизвестный'),
-          otherAvatarUrl: otherUserData['avatarUrl'], otherUid: otherUid,
-          otherProfileColor: otherUserData['profileColor'] ?? 0xFF2AABEE,
-          unreadCount: unreadCount,
-          chatListColor: (data['chatListColor'] ?? otherUserData['profileColor'] ?? 0xFF2AABEE) as int,
-          chatListDecoration: data['chatListDecoration'] ?? 'none',
+        chats.add(
+          ChatPreview(
+            id: doc.id,
+            participants: participants,
+            lastMessage: lastMessage,
+            lastMessageTime: lastMessageTime,
+            otherUsername: isSelfChat
+                ? 'Избранное'
+                : (otherUserData['username'] ?? 'Неизвестный'),
+            otherAvatarUrl: otherUserData['avatarUrl'],
+            otherUid: otherUid,
+            otherProfileColor:
+                (otherUserData['profileColor'] ?? 0xFF2AABEE) as int,
+            unreadCount: unreadCount,
+            chatListColor:
+                (data['chatListColor'] ??
+                        otherUserData['profileColor'] ??
+                        0xFF2AABEE)
+                    as int,
+            chatListDecoration:
+                data['chatListDecoration'] ?? 'none',
+          ),
         );
-      });
+      }
 
-      final chats = await Future.wait(futures);
       chats.sort((a, b) {
         final aUnread = a.unreadCount > 0;
         final bUnread = b.unreadCount > 0;
@@ -66,9 +138,11 @@ class ChatService {
         }
         return b.lastMessageTime.compareTo(a.lastMessageTime);
       });
+
       return chats;
     });
   }
+
   Future<String> getOrCreateChat(String otherUid) async {
     final isSelfChat = otherUid == _myUid;
 
