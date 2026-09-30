@@ -163,18 +163,28 @@ class ChatService {
     final ids = messageIds.toSet();
     if (ids.isEmpty) return;
 
-    final batch = _db.batch();
-    final messagesRef = _db.collection('chats').doc(chatId).collection('messages');
+    final messagesRef =
+        _db.collection('chats').doc(chatId).collection('messages');
+    final idList = ids.toList();
 
-    for (final messageId in ids) {
-      batch.update(messagesRef.doc(messageId), {'read': true});
+    // Держим batch небольшим, чтобы не упираться в лимиты Security Rules
+    // при большом количестве непрочитанных сообщений.
+    for (var start = 0; start < idList.length; start += 10) {
+      final end = (start + 10 < idList.length) ? start + 10 : idList.length;
+      final batch = _db.batch();
+
+      for (final messageId in idList.sublist(start, end)) {
+        batch.update(messagesRef.doc(messageId), {'read': true});
+      }
+
+      if (end == idList.length) {
+        batch.update(_db.collection('chats').doc(chatId), {
+          'unread_$_myUid': 0,
+        });
+      }
+
+      await batch.commit();
     }
-
-    batch.update(_db.collection('chats').doc(chatId), {
-      'unread_$_myUid': 0,
-    });
-
-    await batch.commit();
   }
 
   /// Увеличивает счётчики непрочитанных одним обновлением документа чата.
