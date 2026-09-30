@@ -58,6 +58,18 @@ class ChatService {
         }
       }
 
+      final unreadByChatId = <String, int>{};
+      final unreadSnap = await _db
+          .collection('chatUnread')
+          .where('userId', isEqualTo: _myUid)
+          .get();
+      for (final unreadDoc in unreadSnap.docs) {
+        final chatId = unreadDoc.data()['chatId'];
+        if (chatId is String && chatId.isNotEmpty) {
+          unreadByChatId[chatId] = (unreadByChatId[chatId] ?? 0) + 1;
+        }
+      }
+
       final chats = <ChatPreview>[];
 
       for (final doc in snap.docs) {
@@ -70,8 +82,7 @@ class ChatService {
         final lastMessageTime =
             (data['lastMessageTime'] as Timestamp?)?.toDate() ??
                 DateTime.fromMillisecondsSinceEpoch(0);
-        final unreadValue = data['unread_$_myUid'];
-        final unreadCount = unreadValue is num ? unreadValue.toInt() : 0;
+        final unreadCount = unreadByChatId[doc.id] ?? 0;
 
         if (isGroup) {
           chats.add(
@@ -239,49 +250,58 @@ class ChatService {
 
     final messagesRef =
         _db.collection('chats').doc(chatId).collection('messages');
+    final unreadRef = _db.collection('chatUnread');
     final idList = ids.toList();
 
-    // Держим batch небольшим, чтобы не упираться в лимиты Security Rules
-    // при большом количестве непрочитанных сообщений.
+    // Одновременно отмечаем сообщения прочитанными и удаляем
+    // личные записи непрочитанного состояния текущего пользователя.
     for (var start = 0; start < idList.length; start += 10) {
       final end = (start + 10 < idList.length) ? start + 10 : idList.length;
       final batch = _db.batch();
 
       for (final messageId in idList.sublist(start, end)) {
         batch.update(messagesRef.doc(messageId), {'read': true});
-      }
-
-      if (end == idList.length) {
-        batch.update(_db.collection('chats').doc(chatId), {
-          'unread_$_myUid': 0,
-        });
+        batch.delete(unreadRef.doc(chatId + '_' + messageId + '_' + _myUid));
       }
 
       await batch.commit();
     }
   }
 
-  /// Увеличивает счётчики непрочитанных одним обновлением документа чата.
-  /// Старый вариант делал отдельный network write для каждого получателя.
-  Future<void> _incrementUnreadForRecipients(String chatId) async {
+  /// Создаёт отдельные записи непрочитанного состояния для получателей.
+  /// Получатель владеет своей записью и удаляет её при прочтении.
+  Future<void> _createUnreadRecords(String chatId, String messageId) async {
     final chatDoc = await _db.collection('chats').doc(chatId).get();
     final chatData = chatDoc.data();
     if (chatData == null) return;
 
     final participants = List<String>.from(chatData['participants'] ?? []);
-    final updates = <String, dynamic>{};
+    final recipients = participants.where((uid) => uid != _myUid).toList();
+    if (recipients.isEmpty) return;
 
-    for (final uid in participants) {
-      if (uid != _myUid) {
-        updates['unread_$uid'] = FieldValue.increment(1);
+    final unreadRef = _db.collection('chatUnread');
+
+    for (var start = 0; start < recipients.length; start += 10) {
+      final end = (start + 10 < recipients.length)
+          ? start + 10
+          : recipients.length;
+      final batch = _db.batch();
+
+      for (final uid in recipients.sublist(start, end)) {
+        batch.set(
+          unreadRef.doc(chatId + '_' + messageId + '_' + uid),
+          {
+            'chatId': chatId,
+            'messageId': messageId,
+            'userId': uid,
+            'senderId': _myUid,
+          },
+        );
       }
-    }
 
-    if (updates.isNotEmpty) {
-      await chatDoc.reference.update(updates);
+      await batch.commit();
     }
   }
-
   Future<void> sendImageMessage(String chatId, String imageUrl) async {
     final msgRef = _db.collection('chats').doc(chatId).collection('messages');
     final now = DateTime.now();
@@ -289,7 +309,8 @@ class ChatService {
     final myUserDoc = await _db.collection('users').doc(_myUid).get();
     final myUsername = myUserDoc.data()?['username'] ?? 'Неизвестный';
 
-    await msgRef.add({
+    final messageRef = msgRef.doc();
+    await messageRef.set({
       'senderId': _myUid,
       'senderUsername': myUsername,
       'text': '',
@@ -299,11 +320,12 @@ class ChatService {
       'read': false,
     });
 
+    await _createUnreadRecords(chatId, messageRef.id);
+
     await _db.collection('chats').doc(chatId).update({
       'lastMessage': '📷 Фото',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
-    await _incrementUnreadForRecipients(chatId);
 
     final chatDoc = await _db.collection('chats').doc(chatId).get();
     final chatData = chatDoc.data();
@@ -346,7 +368,8 @@ class ChatService {
     final myUserDoc = await _db.collection('users').doc(_myUid).get();
     final myUsername = myUserDoc.data()?['username'] ?? 'Неизвестный';
 
-    await msgRef.add({
+    final messageRef = msgRef.doc();
+    await messageRef.set({
       'senderId': _myUid,
       'senderUsername': myUsername,
       'text': fileName,
@@ -356,11 +379,12 @@ class ChatService {
       'read': false,
     });
 
+    await _createUnreadRecords(chatId, messageRef.id);
+
     await _db.collection('chats').doc(chatId).update({
       'lastMessage': '🎥 Видео',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
-    await _incrementUnreadForRecipients(chatId);
 
     final chatDoc = await _db.collection('chats').doc(chatId).get();
     final chatData = chatDoc.data();
@@ -398,7 +422,8 @@ class ChatService {
     final myUserDoc = await _db.collection('users').doc(_myUid).get();
     final myUsername = myUserDoc.data()?['username'] ?? 'Неизвестный';
 
-    await msgRef.add({
+    final messageRef = msgRef.doc();
+    await messageRef.set({
       'senderId': _myUid,
       'senderUsername': myUsername,
       'text': '',
@@ -408,11 +433,12 @@ class ChatService {
       'read': false,
     });
 
+    await _createUnreadRecords(chatId, messageRef.id);
+
     await _db.collection('chats').doc(chatId).update({
       'lastMessage': '🎵 Аудио',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
-    await _incrementUnreadForRecipients(chatId);
 
     await _sendMediaNotification(chatId, myUsername, '🎵 Аудио', 'аудио');
   }
@@ -424,7 +450,8 @@ class ChatService {
     final myUserDoc = await _db.collection('users').doc(_myUid).get();
     final myUsername = myUserDoc.data()?['username'] ?? 'Неизвестный';
 
-    await msgRef.add({
+    final messageRef = msgRef.doc();
+    await messageRef.set({
       'senderId': _myUid,
       'senderUsername': myUsername,
       'text': fileName,
@@ -434,11 +461,12 @@ class ChatService {
       'read': false,
     });
 
+    await _createUnreadRecords(chatId, messageRef.id);
+
     await _db.collection('chats').doc(chatId).update({
       'lastMessage': '📎 $fileName',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
-    await _incrementUnreadForRecipients(chatId);
 
     await _sendMediaNotification(chatId, myUsername, '📎 $fileName', 'файл');
   }
@@ -481,7 +509,8 @@ class ChatService {
     final myUserDoc = await _db.collection('users').doc(_myUid).get();
     final myUsername = myUserDoc.data()?['username'] ?? 'Неизвестный';
 
-    await msgRef.add({
+    final messageRef = msgRef.doc();
+    await messageRef.set({
       'senderId': _myUid,
       'senderUsername': myUsername,
       'text': '',
@@ -491,11 +520,12 @@ class ChatService {
       'read': false,
     });
 
+    await _createUnreadRecords(chatId, messageRef.id);
+
     await _db.collection('chats').doc(chatId).update({
       'lastMessage': '😀 Эмодзи',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
-    await _incrementUnreadForRecipients(chatId);
   }
 
   Future<void> sendMessage(String chatId, String text) async {
@@ -507,7 +537,8 @@ class ChatService {
     final myUserDoc = await _db.collection('users').doc(_myUid).get();
     final myUsername = myUserDoc.data()?['username'] ?? 'Неизвестный';
 
-    await msgRef.add({
+    final messageRef = msgRef.doc();
+    await messageRef.set({
       'senderId': _myUid,
       'senderUsername': myUsername,
       'text': text,
@@ -516,11 +547,12 @@ class ChatService {
       'read': false,
     });
 
+    await _createUnreadRecords(chatId, messageRef.id);
+
     await _db.collection('chats').doc(chatId).update({
       'lastMessage': text,
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
-    await _incrementUnreadForRecipients(chatId);
 
     final chatDoc = await _db.collection('chats').doc(chatId).get();
     final chatData = chatDoc.data();
