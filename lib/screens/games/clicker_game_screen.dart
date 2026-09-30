@@ -17,7 +17,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
   bool _loading = true;
   bool _cashingOut = false;
   DateTime _lastTapAt = DateTime.fromMillisecondsSinceEpoch(0);
-  static const _tapCooldown = Duration(milliseconds: 700);
+  static const _tapCooldown = Duration(milliseconds: 400);
   late AnimationController _bounceCtrl;
 
   @override
