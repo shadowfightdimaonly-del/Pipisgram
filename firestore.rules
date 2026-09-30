@@ -110,10 +110,20 @@ service cloud.firestore {
 
         allow update: if request.auth != null
           && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
-          && resource.data.senderId == request.auth.uid
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'edited'])
-          && request.resource.data.edited == true
-          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.hasGiftEditMessages == true;
+          && (
+            (
+              resource.data.senderId == request.auth.uid
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'edited'])
+              && request.resource.data.edited == true
+              && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.hasGiftEditMessages == true
+            )
+            ||
+            (
+              resource.data.senderId != request.auth.uid
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+              && request.resource.data.read == true
+            )
+          );
 
         allow delete: if request.auth != null
           && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
