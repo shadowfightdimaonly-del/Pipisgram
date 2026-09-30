@@ -331,7 +331,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  /// Общая загрузка видео/аудио/файла через Catbox с отдельным статусом
+  /// Общая загрузка видео/аудио/файла через Filebase с отдельным статусом
   /// для каждой карточки (не блокирует остальной UI и другие отправки).
   Future<void> _uploadAndSend({
     required MessageType type,
