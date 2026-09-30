@@ -72,18 +72,32 @@ class HelpService {
       throw Exception('Доступ запрещён');
     }
 
-    final snap = await db
-        .collection('tickets')
-        .orderBy('updatedAt', descending: true)
-        .get();
+    // Не требуем составной индекс и не падаем, если старые тикеты
+    // не содержат updatedAt. Сортируем уже полученные документы на клиенте.
+    final snap = await db.collection('tickets').get();
 
-    return snap.docs.map((doc) {
+    final tickets = snap.docs.map((doc) {
       final data = doc.data();
       return {
         ...data,
         'id': doc.id,
       };
     }).toList();
+
+    tickets.sort((a, b) {
+      final aTime = a['updatedAt'];
+      final bTime = b['updatedAt'];
+
+      DateTime toDate(dynamic value) {
+        if (value is Timestamp) return value.toDate();
+        if (value is DateTime) return value;
+        return DateTime.fromMillisecondsSinceEpoch(0);
+      }
+
+      return toDate(bTime).compareTo(toDate(aTime));
+    });
+
+    return tickets;
   }
 
   Future<void> submitBlockAppeal(String email, String text) async {
