@@ -93,6 +93,7 @@ service cloud.firestore {
           'chatBackgroundUrl',
           'chatBackgroundColor',
           'chatListColor',
+          'unreadVersion',
           'chatListDecoration'
         ]);
 
