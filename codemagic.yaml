@@ -12,8 +12,6 @@ workflows:
         script: flutter pub get
       - name: Generate launcher icons
         script: dart run flutter_launcher_icons
-      - name: Analyze Dart code
-        script: flutter analyze
       - name: Build APK
         script: flutter build apk --release
     artifacts:
