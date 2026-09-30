@@ -63,11 +63,37 @@ class ChatService {
           .collection('chatUnread')
           .where('userId', isEqualTo: _myUid)
           .get();
+
+      // Recovery мог оставить устаревшие записи. Проверяем связанное
+      // сообщение, чтобы фантомный unread не жил вечно.
       for (final unreadDoc in unreadSnap.docs) {
-        final chatId = unreadDoc.data()['chatId'];
-        if (chatId is String && chatId.isNotEmpty) {
-          unreadByChatId[chatId] = (unreadByChatId[chatId] ?? 0) + 1;
+        final unreadData = unreadDoc.data();
+        final chatId = unreadData['chatId'];
+        final messageId = unreadData['messageId'];
+
+        if (chatId is! String ||
+            chatId.isEmpty ||
+            messageId is! String ||
+            messageId.isEmpty) {
+          continue;
         }
+
+        final messageDoc = await _db
+            .collection('chats')
+            .doc(chatId)
+            .collection('messages')
+            .doc(messageId)
+            .get();
+
+        final messageData = messageDoc.data();
+        if (!messageDoc.exists ||
+            messageData == null ||
+            messageData['read'] == true ||
+            messageData['senderId'] == _myUid) {
+          continue;
+        }
+
+        unreadByChatId[chatId] = (unreadByChatId[chatId] ?? 0) + 1;
       }
 
       final chats = <ChatPreview>[];
