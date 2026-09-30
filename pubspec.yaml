@@ -15,7 +15,6 @@ dependencies:
   firebase_core: ^2.27.0
   firebase_auth: ^4.17.4
   cloud_firestore: ^4.15.4
-  firebase_storage: ^11.6.6
   firebase_messaging: ^14.7.19
 
   # UI / utils
@@ -37,10 +36,8 @@ dependencies:
   connectivity_plus: ^6.0.5
 
   # Открытие файлов (видео/аудио) во внешних приложениях
-  # Открытие файлов (видео/аудио) во внешних приложениях
   url_launcher: ^6.3.1
 
-  # Выбор файлов (аудио/документы) из хранилища
   # Выбор файлов (аудио/документы) из хранилища
   file_picker: ^8.0.7
 
