@@ -269,16 +269,12 @@ class ChatService {
     if (chatData == null) return;
 
     final participants = List<String>.from(chatData['participants'] ?? []);
-    final updates = <String, dynamic>{};
-
     for (final uid in participants) {
       if (uid != _myUid) {
-        updates['unread_$uid'] = FieldValue.increment(1);
+        await chatDoc.reference.update({
+          'unread_$uid': FieldValue.increment(1),
+        });
       }
-    }
-
-    if (updates.isNotEmpty) {
-      await chatDoc.reference.update(updates);
     }
   }
 
