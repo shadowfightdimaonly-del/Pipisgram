@@ -94,6 +94,7 @@ class _ChatScreenState extends State<ChatScreen> {
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   final Set<String> _initialUnreadMessageIds = {};
   final Set<String> _readMarkInFlight = {};
+  final Map<String, bool> _groupAdminByUid = {};
   String? _chatBackgroundUrl;
   int _chatBackgroundColorValue = 0xFF121212;
 
@@ -171,7 +172,30 @@ class _ChatScreenState extends State<ChatScreen> {
         .collection('chats')
         .doc(widget.chatId)
         .get();
-    if (mounted) setState(() => _isGroup = doc.data()?['isGroup'] == true);
+    final data = doc.data();
+    final isGroup = data?['isGroup'] == true;
+
+    if (isGroup) {
+      final participants = List<String>.from(data?['participants'] ?? []);
+      for (var start = 0; start < participants.length; start += 30) {
+        final end = (start + 30 < participants.length)
+            ? start + 30
+            : participants.length;
+        final chunk = participants.sublist(start, end);
+        if (chunk.isEmpty) continue;
+
+        final users = await FirebaseFirestore.instance
+            .collection('users')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+
+        for (final user in users.docs) {
+          _groupAdminByUid[user.id] = user.data()['isAdmin'] == true;
+        }
+      }
+    }
+
+    if (mounted) setState(() => _isGroup = isGroup);
   }
 
   Future<void> _checkEditRights() async {
@@ -891,13 +915,26 @@ class _ChatScreenState extends State<ChatScreen> {
                   if (_isGroup && !isMine)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 2),
-                      child: Text(
-                        '@${msg.senderUsername ?? 'неизвестный'}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '@${msg.senderUsername ?? 'неизвестный'}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          if (_groupAdminByUid[msg.senderId] == true) ...[
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.verified,
+                              color: Colors.lightBlueAccent,
+                              size: 14,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   _buildMessageContent(msg, isMine),
