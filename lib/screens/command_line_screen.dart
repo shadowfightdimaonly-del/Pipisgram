@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/mini_games_service.dart';
 import 'chat_screen.dart';
 
 const Map<String, Map<String, dynamic>> _promoCodes = {
@@ -21,6 +22,7 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
   final _inputCtrl = TextEditingController();
   final _db = FirebaseFirestore.instance;
   final _myUid = FirebaseAuth.instance.currentUser!.uid;
+  final _gamesService = MiniGamesService();
 
   final List<String> _log = [
     '> система готова. напиши "help" для списка команд',
@@ -45,10 +47,6 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
     return doc.data();
   }
 
-  Future<bool> _isAdmin() async {
-    final data = await _myData();
-    return data?['isAdmin'] == true;
-  }
 
   Future<DocumentSnapshot?> _findUserByUsername(String rawUsername) async {
     final username = rawUsername.replaceFirst('@', '').trim();
@@ -61,15 +59,6 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
     return query.docs.first;
   }
 
-  bool _isPremiumActive(Map<String, dynamic>? data) {
-    if (data == null) return false;
-    if (data['isPremium'] == true) return true;
-    final expiry = data['premiumUntil'];
-    if (expiry is Timestamp) {
-      return expiry.toDate().isAfter(DateTime.now());
-    }
-    return false;
-  }
 
   Future<void> _runCommand(String raw) async {
     final cmd = raw.trim();
@@ -91,10 +80,12 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
         _print('''
 доступные команды:
   whoami                    — свой публичный профиль
-  whoami @ник                — профиль другого пользователя
-''');
+  whoami @ник               — профиль другого пользователя
+  ping                      — проверить связь с Firestore
+  clear                     — очистить консоль
+  users count               — сколько всего зарегистрировано
+  version                   — версия приложения''');
         break;
-
       case 'whoami':
         if (parts.length > 1) {
           final userDoc = await _findUserByUsername(parts[1]);
