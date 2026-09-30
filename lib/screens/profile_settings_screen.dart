@@ -9,7 +9,6 @@ import '../services/image_upload_service.dart';
 import '../services/auth_service.dart';
 import 'proxy_settings_screen.dart';
 import 'custom_emoji_screen.dart';
-import 'message_bubble_appearance_screen.dart';
 import 'admin_panel_screen.dart';
 import 'shadow_stars_screen.dart';
 import 'gifts_screen.dart';
@@ -437,27 +436,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             ),
                           );
                         }).toList(),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.tune_outlined),
-                        title: const Text('Редактор облачка'),
-                        subtitle: const Text(
-                          'Цвет, градиент, рамка, тень, текст и украшение',
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const MessageBubbleAppearanceScreen(),
-                            ),
-                          );
-                        },
                       ),
                     ),
                     const Padding(
