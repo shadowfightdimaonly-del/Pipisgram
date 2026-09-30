@@ -94,15 +94,7 @@ service cloud.firestore {
           'chatBackgroundColor',
           'chatListColor',
           'chatListDecoration'
-        ])
-        || (
-          request.auth != null
-          && request.auth.uid in resource.data.participants
-          && request.resource.data.diff(resource.data).affectedKeys().size() == 1
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'unread_$(request.auth.uid)'
-          ])
-        );
+        ]);
 
       match /messages/{messageId} {
         allow read: if request.auth != null
@@ -110,7 +102,9 @@ service cloud.firestore {
 
         allow create: if request.auth != null
           && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
-          && request.resource.data.senderId == request.auth.uid;
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.chatId == chatId
+          && request.resource.data.read == false;
 
         allow update: if request.auth != null
           && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
@@ -133,6 +127,46 @@ service cloud.firestore {
           && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
           && resource.data.senderId == request.auth.uid;
       }
+    }
+
+    // One unread document belongs to exactly one recipient.
+    // This replaces the old unread_<uid> fields on chats, which allowed the
+    // sender client to try to mutate another user's counter.
+    match /chatUnread/{unreadId} {
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly([
+          'chatId',
+          'messageId',
+          'userId',
+          'senderId'
+        ])
+        && request.resource.data.chatId is string
+        && request.resource.data.messageId is string
+        && request.resource.data.userId is string
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.userId != request.auth.uid
+        && request.auth.uid in get(
+          /databases/$(database)/documents/chats/$(request.resource.data.chatId)
+        ).data.participants
+        && request.resource.data.userId in get(
+          /databases/$(database)/documents/chats/$(request.resource.data.chatId)
+        ).data.participants
+        && get(
+          /databases/$(database)/documents/chats/$(request.resource.data.chatId)/messages/$(request.resource.data.messageId)
+        ).data.senderId == request.auth.uid
+        && get(
+          /databases/$(database)/documents/chats/$(request.resource.data.chatId)/messages/$(request.resource.data.messageId)
+        ).data.chatId == request.resource.data.chatId
+        && get(
+          /databases/$(database)/documents/chats/$(request.resource.data.chatId)/messages/$(request.resource.data.messageId)
+        ).data.read == false;
+
+      allow update: if false;
+      allow delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
     }
 
     match /usedPromoCodes/{docId} {
