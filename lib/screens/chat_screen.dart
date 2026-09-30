@@ -345,31 +345,37 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() => _pendingUploads.insert(0, pending));
     }
 
-    final url = await FileUploadService.uploadFile(filePath, fileName);
+    try {
+      final url = await FileUploadService.uploadFile(filePath, fileName);
 
-    if (url == null) {
+      if (url == null) {
+        if (mounted) {
+          setState(() => pending.status = _UploadStatus.error);
+        }
+        return;
+      }
+
+      switch (type) {
+        case MessageType.video:
+          await _chatService.sendVideoMessage(widget.chatId, url, fileName);
+          break;
+        case MessageType.audio:
+          await _chatService.sendAudioMessage(widget.chatId, url);
+          break;
+        case MessageType.file:
+          await _chatService.sendFileMessage(widget.chatId, url, fileName);
+          break;
+        default:
+          break;
+      }
+
+      if (mounted) {
+        setState(() => _pendingUploads.removeWhere((p) => p.id == id));
+      }
+    } catch (_) {
       if (mounted) {
         setState(() => pending.status = _UploadStatus.error);
       }
-      return;
-    }
-
-    switch (type) {
-      case MessageType.video:
-        await _chatService.sendVideoMessage(widget.chatId, url, fileName);
-        break;
-      case MessageType.audio:
-        await _chatService.sendAudioMessage(widget.chatId, url);
-        break;
-      case MessageType.file:
-        await _chatService.sendFileMessage(widget.chatId, url, fileName);
-        break;
-      default:
-        break;
-    }
-
-    if (mounted) {
-      setState(() => _pendingUploads.removeWhere((p) => p.id == id));
     }
   }
 
