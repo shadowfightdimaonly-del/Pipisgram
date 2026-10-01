@@ -93,7 +93,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                 _feature(Icons.numbers, 'Угадайка',
                     '6 попыток вместо 3. С подарком №5 получается 9.'),
                 _feature(Icons.directions_run, 'Ночной бег',
-                    '1★ за прыжок вместо 0,5★. Лимита на Dino нет.'),
+                    '1 ядро за прыжок вместо 0,5 ядра. Лимита на Dino нет.'),
                 _feature(Icons.people, 'Счётчик пользователей',
                     _registeredCount == null
                         ? 'Показывается после активации Premium.'
@@ -101,7 +101,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
                 _feature(Icons.emoji_emotions, 'Мои эмодзи',
                     'Лимит увеличивается с 12 до 24.'),
                 _feature(Icons.card_giftcard, 'Скидка на подарки',
-                    'Все подарки дешевле на 25★.'),
+                    'Все подарки дешевле на 25 ядер.'),
               ],
             ),
     );
