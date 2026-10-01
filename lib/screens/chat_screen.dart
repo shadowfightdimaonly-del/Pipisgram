@@ -257,11 +257,19 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _send() {
+  Future<void> _send() async {
     final text = _textCtrl.text.trim();
     if (text.isEmpty) return;
-    _chatService.sendMessage(widget.chatId, text);
-    _textCtrl.clear();
+    try {
+      await _chatService.sendMessage(widget.chatId, text);
+      if (mounted) _textCtrl.clear();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Не удалось отправить сообщение: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _sendImage() async {
