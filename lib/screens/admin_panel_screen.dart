@@ -211,7 +211,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('🌟 Списание звёзд 🌟'),
+        title: const Text('🟣 Списание ядер 🟣'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -259,7 +259,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     final amount = result['amount'] as int;
     final reason = result['reason'] as String;
     await _confirmAction(
-      '🌟 Подтвердить списание ' + amount.toString() + ' звёзд?',
+      '🟣 Подтвердить списание ' + amount.toString() + ' ядер?',
       'У пользователя будет списано:\n\n🌟 ' + amount.toString() +
           '\n\nПричина: ' + reason,
       () => _help.penalizeUser(user['uid'].toString(), amount, reason),
