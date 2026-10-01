@@ -208,7 +208,7 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
       await _loadDinoStatus();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Получено $earned★')),
+        SnackBar(content: Text('Получено $earned ядер')),
       );
     } catch (e) {
       if (!mounted) return;
