@@ -59,14 +59,15 @@ class ChatService {
       }
 
       final unreadByChatId = <String, int>{};
-      final unreadSnap = await _db
-          .collection('chatUnread')
-          .where('userId', isEqualTo: _myUid)
-          .get();
+      try {
+        final unreadSnap = await _db
+            .collection('chatUnread')
+            .where('userId', isEqualTo: _myUid)
+            .get();
 
-      // Recovery мог оставить устаревшие записи. Проверяем связанное
-      // сообщение, чтобы фантомный unread не жил вечно.
-      for (final unreadDoc in unreadSnap.docs) {
+        // Recovery мог оставить устаревшие записи. Проверяем связанное
+        // сообщение, чтобы фантомный unread не жил вечно.
+        for (final unreadDoc in unreadSnap.docs) {
         final unreadData = unreadDoc.data();
         final chatId = unreadData['chatId'];
         final messageId = unreadData['messageId'];
@@ -100,6 +101,10 @@ class ChatService {
           // Она не должна ломать весь список чатов.
           continue;
         }
+        }
+      } catch (_) {
+        // Старые Firebase Rules могут ещё не содержать chatUnread.
+        // В таком случае чат-лист всё равно должен открываться.
       }
 
       final chats = <ChatPreview>[];
@@ -300,7 +305,12 @@ class ChatService {
         'unreadVersion': FieldValue.increment(1),
       });
 
-      await batch.commit();
+      try {
+        await batch.commit();
+      } catch (_) {
+        // Если chatUnread ещё не разрешён в опубликованных Rules,
+        // не ломаем отправку сообщения из-за необязательного unread-счётчика.
+      }
     }
   }
 
@@ -335,7 +345,12 @@ class ChatService {
         );
       }
 
-      await batch.commit();
+      try {
+        await batch.commit();
+      } catch (_) {
+        // До публикации новых Rules chatUnread может быть недоступен.
+        // Само сообщение уже создано, поэтому не блокируем отправку.
+      }
     }
   }
   Future<void> sendImageMessage(String chatId, String imageUrl) async {
