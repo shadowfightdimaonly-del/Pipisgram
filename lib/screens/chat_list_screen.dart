@@ -9,6 +9,7 @@ import 'profile_settings_screen.dart';
 import 'chat_appearance_screen.dart';
 import 'new_chat_screen.dart';
 import 'new_group_screen.dart';
+import 'mini_games_screen.dart';
 
 class ChatListScreen extends StatelessWidget {
   const ChatListScreen({super.key});
@@ -51,7 +52,7 @@ class ChatListScreen extends StatelessWidget {
 
           return ListView.builder(
             // +2 — под "Командную строку" и "Избранное", они всегда первые
-            itemCount: chats.length + 2,
+            itemCount: chats.length + 3,
             itemBuilder: (context, index) {
               if (index == 0) {
                 return _CommandLineTile(
@@ -64,6 +65,15 @@ class ChatListScreen extends StatelessWidget {
               }
 
               if (index == 1) {
+                return _GamesTile(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MiniGamesScreen()),
+                  ),
+                );
+              }
+
+              if (index == 2) {
                 return _SavedMessagesTile(
                   onTap: () async {
                     final chatId = await chatService.getOrCreateChat(myUid);
@@ -81,7 +91,7 @@ class ChatListScreen extends StatelessWidget {
                 );
               }
 
-              final chat = chats[index - 2];
+              final chat = chats[index - 3];
               final listColor = Color(chat.chatListColor);
               final decorationIcon = switch (chat.chatListDecoration) {
                 'water' => Icons.water_drop_outlined,
@@ -307,6 +317,25 @@ class _SavedMessagesTile extends StatelessWidget {
       title: const Text('Избранное',
           style: TextStyle(fontWeight: FontWeight.w600)),
       subtitle: const Text('Заметки и сохранённые сообщения'),
+      onTap: onTap,
+    );
+  }
+}
+
+class _GamesTile extends StatelessWidget {
+  final VoidCallback onTap;
+  const _GamesTile({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        child: const Icon(Icons.sports_esports_outlined, color: Colors.white),
+      ),
+      title: const Text('Игры', style: TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: const Text('Кликер, Ночной бег и Угадай число'),
+      trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
     );
   }
