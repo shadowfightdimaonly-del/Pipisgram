@@ -299,17 +299,26 @@ class ChatService {
 
       for (final messageId in idList.sublist(start, end)) {
         batch.update(messagesRef.doc(messageId), {'read': true});
-        batch.delete(unreadRef.doc(chatId + '_' + messageId + '_' + _myUid));
       }
       batch.update(chatRef, {
         'unreadVersion': FieldValue.increment(1),
       });
 
+      // Отметка сообщения прочитанным не должна зависеть от того,
+      // опубликованы ли уже новые Rules для chatUnread.
+      await batch.commit();
+
+      final unreadBatch = _db.batch();
+      for (final messageId in idList.sublist(start, end)) {
+        unreadBatch.delete(
+          unreadRef.doc(chatId + '_' + messageId + '_' + _myUid),
+        );
+      }
       try {
-        await batch.commit();
+        await unreadBatch.commit();
       } catch (_) {
-        // Если chatUnread ещё не разрешён в опубликованных Rules,
-        // не ломаем отправку сообщения из-за необязательного unread-счётчика.
+        // Старые Rules могут пока не разрешать chatUnread.
+        // Это необязательное ускорение счётчика, не блокируем чат.
       }
     }
   }
