@@ -81,6 +81,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
   }
 
   Future<void> _cashOut() async {
+    final availableStars = (_availableTaps * 3) ~/ 10;
     if (_availableTaps <= 0 || availableStars <= 0 || _cashingOut) return;
     setState(() => _cashingOut = true);
 
