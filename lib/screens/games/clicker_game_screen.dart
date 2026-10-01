@@ -81,7 +81,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
   }
 
   Future<void> _cashOut() async {
-    if (_availableTaps == 0 || _cashingOut) return;
+    if (_availableTaps <= 0 || availableStars <= 0 || _cashingOut) return;
     setState(() => _cashingOut = true);
 
     try {
@@ -117,7 +117,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
         setState(() => _cashingOut = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Не удалось вывести звёзды, попробуй ещё раз'),
+            content: Text('Не удалось вывести ядра, попробуй ещё раз'),
             backgroundColor: Colors.red,
           ),
         );
@@ -192,7 +192,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: FilledButton.icon(
-                    onPressed: (_availableTaps > 0 && !_cashingOut)
+                    onPressed: (availableStars > 0 && !_cashingOut)
                         ? _cashOut
                         : null,
                     icon: _cashingOut
