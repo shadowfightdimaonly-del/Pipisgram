@@ -514,7 +514,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         height: 28,
                         fit: BoxFit.contain,
                       ),
-                      title: const Text('Теневые звёзды'),
+                      title: const Text('Ядра'),
                       subtitle: const Text('Открыть баланс теневой валюты'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () => Navigator.push(
