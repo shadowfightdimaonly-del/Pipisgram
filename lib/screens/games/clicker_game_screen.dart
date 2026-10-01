@@ -104,7 +104,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
               children: [
                 const Icon(Icons.stars, color: Colors.amber),
                 const SizedBox(width: 8),
-                Text('Получено $earned★!'),
+                Text('Получено $earned ядер!'),
               ],
             ),
             backgroundColor: Colors.green.shade700,
@@ -204,7 +204,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
                           )
                         : const Icon(Icons.stars),
                     label: Text(
-                        _cashingOut ? 'Забираем...' : 'Забрать $availableStars★'),
+                        _cashingOut ? 'Забираем...' : 'Забрать $availableStars ядер'),
                   ),
                 ),
               ],
