@@ -46,6 +46,7 @@ class ChatApp extends StatelessWidget {
             );
           }
           if (snapshot.hasData) {
+            OneSignal.login(snapshot.data!.uid);
             return FutureBuilder(
               future: AuthService().ensureUserCode(),
               builder: (context, _) => const _HeartbeatWrapper(
