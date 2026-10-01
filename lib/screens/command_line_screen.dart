@@ -127,8 +127,7 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
   clear                       — очистить консоль
   users count                 — сколько всего зарегистрировано
   version                     — версия приложения
-  mini_game                   — открыть мини-игры
-  support                     — открыть поддержку''');
+  help                       — список этих команд''');
         break;
 
       case 'whoami':
