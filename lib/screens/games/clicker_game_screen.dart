@@ -104,7 +104,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
               children: [
                 const Icon(Icons.stars, color: Colors.amber),
                 const SizedBox(width: 8),
-                Text('Получено $earned★!'),
+                Text('Получено $earned ядер!'),
               ],
             ),
             backgroundColor: Colors.green.shade700,
@@ -117,7 +117,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
         setState(() => _cashingOut = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Не удалось вывести звёзды, попробуй ещё раз'),
+            content: Text('Не удалось вывести ядра, попробуй ещё раз'),
             backgroundColor: Colors.red,
           ),
         );
@@ -144,7 +144,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
                           style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 4),
                       Text(
-                          'Доступно к выводу: $_availableTaps тапов = $availableStars★',
+                          'Доступно к выводу: $_availableTaps тапов = $availableStars ядер',
                           style: const TextStyle(color: Colors.grey)),
                     ],
                   ),
@@ -204,7 +204,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
                           )
                         : const Icon(Icons.stars),
                     label: Text(
-                        _cashingOut ? 'Забираем...' : 'Забрать $availableStars★'),
+                        _cashingOut ? 'Забираем...' : 'Забрать $availableStars ядер'),
                   ),
                 ),
               ],
