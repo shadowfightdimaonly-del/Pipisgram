@@ -139,8 +139,21 @@ class ChatService {
         .where('username', isEqualTo: cleanUsername)
         .limit(1)
         .get();
-    if (query.docs.isEmpty) return null;
-    return AppUser.fromMap(query.docs.first.id, query.docs.first.data());
+    if (query.docs.isNotEmpty) {
+      return AppUser.fromMap(query.docs.first.id, query.docs.first.data());
+    }
+
+    // Username search is case-insensitive in the UI. Firestore equality
+    // queries are case-sensitive, so use a small fallback for this private app.
+    final normalized = cleanUsername.toLowerCase();
+    final allUsers = await _db.collection('users').get();
+    for (final doc in allUsers.docs) {
+      final username = (doc.data()['username'] ?? '').toString().toLowerCase();
+      if (username == normalized) {
+        return AppUser.fromMap(doc.id, doc.data());
+      }
+    }
+    return null;
   }
 
   /// Поиск по 5-значному коду — основной способ добавить друга
