@@ -17,7 +17,7 @@ class MiniGamesScreen extends StatelessWidget {
             icon: Icons.touch_app,
             color: Colors.blueAccent,
             title: 'Кликер',
-            subtitle: '0.3★ за тап · до 1000 тапов в день',
+            subtitle: '0.3 ядра за тап · до 1000 тапов в день',
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const ClickerGameScreen()),
@@ -28,7 +28,7 @@ class MiniGamesScreen extends StatelessWidget {
             icon: Icons.directions_run,
             color: Colors.deepPurpleAccent,
             title: 'Ночной бег',
-            subtitle: '0.5★ за прыжок · без лимита',
+            subtitle: '0.5 ядра за прыжок · без лимита',
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const DinoGameScreen()),
@@ -39,7 +39,7 @@ class MiniGamesScreen extends StatelessWidget {
             icon: Icons.casino,
             color: Colors.orangeAccent,
             title: 'Угадай число',
-            subtitle: '1-15 · 1★ за угадывание · 3 попытки в день, с подарком №2 — 6',
+            subtitle: '1-15 · 1 ядро за угадывание · 3 попытки в день, с подарком №2 — 6',
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
