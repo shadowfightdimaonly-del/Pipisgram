@@ -39,6 +39,61 @@ class _AccountSwitchScreenState extends State<AccountSwitchScreen> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
+  Future<void> _addAccount() async {
+    final emailCtrl = TextEditingController();
+    final passwordCtrl = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Добавить аккаунт'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: emailCtrl,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            TextField(
+              controller: passwordCtrl,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Пароль'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final email = emailCtrl.text.trim();
+              final password = passwordCtrl.text;
+              if (email.isEmpty || password.isEmpty) return;
+              final error = await _auth.login(email, password);
+              if (!dialogContext.mounted) return;
+              if (error != null) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(content: Text(error)),
+                );
+                return;
+              }
+              Navigator.pop(dialogContext, true);
+            },
+            child: const Text('Добавить'),
+          ),
+        ],
+      ),
+    );
+    emailCtrl.dispose();
+    passwordCtrl.dispose();
+    if (result == true && mounted) {
+      await _auth.logout();
+      setState(() => _accounts = _auth.savedAccounts());
+    }
+  }
+
   Future<void> _remove(Map<String, String> account) async {
     final email = account['email'];
     if (email == null) return;
@@ -52,7 +107,16 @@ class _AccountSwitchScreenState extends State<AccountSwitchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Сменить аккаунт')),
+      appBar: AppBar(
+        title: const Text('Сменить аккаунт'),
+        actions: [
+          IconButton(
+            tooltip: 'Добавить аккаунт',
+            icon: const Icon(Icons.person_add_alt_1),
+            onPressed: _switching ? null : _addAccount,
+          ),
+        ],
+      ),
       body: FutureBuilder<List<Map<String, String>>>(
         future: _accounts,
         builder: (context, snapshot) {
