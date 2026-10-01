@@ -16,13 +16,6 @@ import 'gifts_screen.dart';
 import 'premium_screen.dart';
 import 'account_switch_screen.dart';
 
-const List<Map<String, dynamic>> bubbleStyles = [
-  {'id': 'rounded', 'name': 'Круглые', 'radius': 16.0},
-  {'id': 'sharp', 'name': 'Острые', 'radius': 4.0},
-  {'id': 'pill', 'name': 'Овальные', 'radius': 24.0},
-  {'id': 'square', 'name': 'Квадратные', 'radius': 0.0},
-];
-
 class ProfileSettingsScreen extends StatefulWidget {
   const ProfileSettingsScreen({super.key});
 
@@ -37,7 +30,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   bool _loading = true;
   bool _uploadingAvatar = false;
   bool _uploadingBackground = false;
-  bool _uploadingBubble = false;
   bool _showOnlineStatus = true;
   bool _showGifts = false;
   bool _showTakeoverGift = false;
@@ -45,11 +37,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   String _userCode = '';
   String? _avatarUrl;
   String? _backgroundUrl;
-  String? _bubbleTextureUrl;
   String? _badgeEmoji;
   bool _isAdmin = false;
   int _profileColorValue = 0xFF2AABEE;
-  String _bubbleStyle = 'rounded';
 
   bool _hasEditGift = false;
   bool _hasAvatarGift = false;
@@ -83,11 +73,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _userCode = data?['userCode'] ?? '—';
       _avatarUrl = data?['avatarUrl'];
       _backgroundUrl = data?['profileBackgroundUrl'];
-      _bubbleTextureUrl = data?['bubbleTextureUrl'];
       _badgeEmoji = data?['badgeEmoji'];
       _isAdmin = data?['isAdmin'] == true;
       _profileColorValue = data?['profileColor'] ?? 0xFF2AABEE;
-      _bubbleStyle = data?['bubbleStyle'] ?? 'rounded';
       _hasEditGift = data?['hasGiftEditMessages'] == true;
       _hasAvatarGift = data?['hasGiftChangeAvatars'] == true;
       _hasTakeoverGift = data?['hasGiftGroupTakeover'] == true;
@@ -120,12 +108,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     });
   }
 
-  Future<void> _setBubbleStyle(String styleId) async {
-    setState(() => _bubbleStyle = styleId);
-    await _db.collection('users').doc(_myUid).update({
-      'bubbleStyle': styleId,
-    });
-  }
 
   Future<void> _pickAndUploadAvatar() async {
     final picker = ImagePicker();
@@ -198,44 +180,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     setState(() => _backgroundUrl = null);
   }
 
-  Future<void> _pickAndUploadBubbleTexture() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 600,
-      imageQuality: 80,
-    );
-    if (picked == null) return;
-
-    setState(() => _uploadingBubble = true);
-
-    final bytes = await File(picked.path).readAsBytes();
-    final url = await ImageUploadService.uploadImage(bytes);
-
-    if (url != null) {
-      await _db.collection('users').doc(_myUid).update({
-        'bubbleTextureUrl': url,
-      });
-      setState(() {
-        _bubbleTextureUrl = url;
-        _uploadingBubble = false;
-      });
-    } else {
-      setState(() => _uploadingBubble = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Не удалось загрузить текстуру')),
-        );
-      }
-    }
-  }
-
-  Future<void> _removeBubbleTexture() async {
-    await _db.collection('users').doc(_myUid).update({
-      'bubbleTextureUrl': FieldValue.delete(),
-    });
-    setState(() => _bubbleTextureUrl = null);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -458,125 +402,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             ),
                           );
                         },
-                      ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-                      child: Text(
-                        'Форма облачка сообщений',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: bubbleStyles.map((style) {
-                          final isSelected = style['id'] == _bubbleStyle;
-                          return GestureDetector(
-                            onTap: () => _setBubbleStyle(style['id']),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? profileColor
-                                    : Theme.of(context)
-                                        .colorScheme
-                                        .surfaceVariant,
-                                borderRadius: BorderRadius.circular(
-                                  style['radius'] as double,
-                                ),
-                              ),
-                              child: Text(
-                                style['name'],
-                                style: TextStyle(
-                                  color: isSelected ? Colors.white : null,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-                      child: Text(
-                        'Текстура твоих облачков',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: _uploadingBubble
-                                ? null
-                                : _pickAndUploadBubbleTexture,
-                            onLongPress: _bubbleTextureUrl != null
-                                ? _removeBubbleTexture
-                                : null,
-                            child: Container(
-                              width: 70,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: profileColor,
-                                borderRadius: BorderRadius.circular(12),
-                                image: _bubbleTextureUrl != null
-                                    ? DecorationImage(
-                                        image:
-                                            NetworkImage(_bubbleTextureUrl!),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
-                              ),
-                              child: _uploadingBubble
-                                  ? const Center(
-                                      child: SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    )
-                                  : (_bubbleTextureUrl == null
-                                      ? const Icon(
-                                          Icons.add_photo_alternate_outlined,
-                                          color: Colors.white,
-                                        )
-                                      : null),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              _bubbleTextureUrl != null
-                                  ? 'Нажми, чтобы заменить. Долгое нажатие — убрать.'
-                                  : 'Нажми, чтобы загрузить свой узор для облачков',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[500],
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                     Padding(
