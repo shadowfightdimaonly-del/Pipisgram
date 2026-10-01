@@ -221,7 +221,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
               controller: amountController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Количество звёзд',
+                labelText: 'Количество ядер',
                 hintText: '70',
                 prefixText: '🌟 ',
               ),
@@ -357,7 +357,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
             const SizedBox(height: 12),
             Text('UID: ' + (user['uid'] ?? '—').toString()),
             Text('Email: ' + (user['email'] ?? '—').toString()),
-            Text('Баланс: 🌟 ' + (user['shadowStars'] ?? 0).toString()),
+            Text('Баланс: 🟣 ' + (user['shadowStars'] ?? 0).toString()),
             Text('Предупреждения: ' + (user['supportWarnings'] ?? 0).toString()),
             Text('Статус: ' + _blockText(user)),
             if ((user['blockReason'] ?? '').toString().isNotEmpty)
