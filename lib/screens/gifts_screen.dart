@@ -78,7 +78,7 @@ class _GiftsScreenState extends State<GiftsScreen> {
       if (mounted) {
         final price = (result['price'] as num?)?.toInt() ?? gift.price;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Подарок куплен за $price★ 🎁')),
+          SnackBar(content: Text('Подарок куплен за $price ядер 🎁')),
         );
       }
     } catch (e) {
@@ -140,12 +140,12 @@ class _GiftsScreenState extends State<GiftsScreen> {
                                   label: Text('Требуется Premium'),
                                 ),
                               if (_premium)
-                                Text('${item.price}★',
+                                Text('${item.price} ядер',
                                   style: const TextStyle(
                                     decoration: TextDecoration.lineThrough,
                                     color: Colors.grey,
                                   )),
-                              Text('$price★', style: const TextStyle(
+                              Text('$price ядер', style: const TextStyle(
                                   fontSize: 28, fontWeight: FontWeight.w800)),
                               const SizedBox(height: 18),
                               FilledButton.icon(
@@ -156,7 +156,7 @@ class _GiftsScreenState extends State<GiftsScreen> {
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2, color: Colors.white))
                                     : const Icon(Icons.stars),
-                                label: Text(owned ? 'Куплено ✓' : 'Купить 🌟'),
+                                label: Text(owned ? 'Куплено ✓' : 'Купить'),
                               ),
                             ],
                           ),
