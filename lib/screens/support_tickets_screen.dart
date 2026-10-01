@@ -247,7 +247,7 @@ class _TicketViewState extends State<TicketView> {
                                 decoration: const InputDecoration(
                                   labelText: 'Количество ядер',
                                   hintText: '70',
-                                  prefixText: '🌟 ',
+                                  prefixText: '🟣 ',
                                 ),
                               ),
                               TextField(
@@ -283,8 +283,8 @@ class _TicketViewState extends State<TicketView> {
                       final confirmed = await showDialog<bool>(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: Text('🌟 Списать $amount звёзд?'),
-                          content: Text('Будет списано 🌟 $amount.\n\nПричина: $reason'),
+                          title: Text('🟣 Списать $amount ядер?'),
+                          content: Text('Будет списано 🟣 $amount.\n\nПричина: $reason'),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context, false),
@@ -292,7 +292,7 @@ class _TicketViewState extends State<TicketView> {
                             ),
                             FilledButton(
                               onPressed: () => Navigator.pop(context, true),
-                              child: Text('Списать $amount 🌟'),
+                              child: Text('Списать $amount 🟣'),
                             ),
                           ],
                         ),
@@ -374,7 +374,7 @@ class _TicketViewState extends State<TicketView> {
                   if (widget.admin) ...[
                     const PopupMenuDivider(),
                     const PopupMenuItem(value: 'warn', child: Text('Предупредить')),
-                    const PopupMenuItem(value: 'penalty', child: Text('Штраф звёздами')),
+                    const PopupMenuItem(value: 'penalty', child: Text('Штраф ядрами')),
                     const PopupMenuItem(value: 'block24', child: Text('Заморозить на 24 часа')),
                     const PopupMenuItem(value: 'blockPermanent', child: Text('Заблокировать навсегда')),
                     const PopupMenuItem(value: 'unblock', child: Text('Снять блокировку')),
