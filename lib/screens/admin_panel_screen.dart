@@ -211,7 +211,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('🌟 Списание звёзд 🌟'),
+        title: const Text('🌟 Списание ядер 🌟'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -221,7 +221,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
               controller: amountController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Количество звёзд',
+                labelText: 'Количество ядер',
                 hintText: '70',
                 prefixText: '🌟 ',
               ),
@@ -260,7 +260,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     final reason = result['reason'] as String;
     await _confirmAction(
       '🌟 Подтвердить списание ' + amount.toString() + ' звёзд?',
-      'У пользователя будет списано:\n\n🌟 ' + amount.toString() +
+      'У пользователя будет списано:\n\n🟣 ' + amount.toString() +
           '\n\nПричина: ' + reason,
       () => _help.penalizeUser(user['uid'].toString(), amount, reason),
     );
@@ -357,7 +357,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
             const SizedBox(height: 12),
             Text('UID: ' + (user['uid'] ?? '—').toString()),
             Text('Email: ' + (user['email'] ?? '—').toString()),
-            Text('Баланс: 🌟 ' + (user['shadowStars'] ?? 0).toString()),
+            Text('Баланс: 🟣 ' + (user['shadowStars'] ?? 0).toString()),
             Text('Предупреждения: ' + (user['supportWarnings'] ?? 0).toString()),
             Text('Статус: ' + _blockText(user)),
             if ((user['blockReason'] ?? '').toString().isNotEmpty)
