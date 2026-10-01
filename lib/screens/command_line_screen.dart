@@ -1,50 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'mini_games_screen.dart';
-import 'chat_screen.dart';
-import 'support_screen.dart';
-import '../services/mini_games_service.dart';
-import '../services/chat_service.dart';
-import '../services/push_notification_service.dart';
-
-const int _premiumPrice = 750;
-const String _supportUserCode = '80930';
-const Map<String, Map<String, dynamic>> _gifts = {
-  '1': {
-    'name': 'Право редактора сообщений',
-    'price': 125,
-    'field': 'hasGiftEditMessages',
-  },
-  '2': {
-    'name': 'Право менять чужие аватарки',
-    'price': 215,
-    'field': 'hasGiftChangeAvatars',
-  },
-  '3': {
-    'name': 'Власть над группами',
-    'price': 570,
-    'field': 'hasGiftGroupTakeover',
-    'requiresPremium': true,
-  },
-  '4': {
-    'name': 'Право менять чужие юзернеймы',
-    'price': 150,
-    'field': 'hasGiftChangeUsernames',
-  },
-  '5': {
-    'name': 'Двойные попытки в угадайке',
-    'price': 235,
-    'field': 'hasGiftDoubleGuessAttempts',
-  },
-};
-
-const Map<String, Map<String, dynamic>> _promoCodes = {
-  'shadow_star_gift210': {'type': 'stars', 'amount': 15},
-  'shadow_star_free700': {'type': 'stars', 'amount': 30},
-  'shadow_star_12_13_15q': {'type': 'stars', 'amount': 50},
-  'premium_19387': {'type': 'premium', 'days': 5},
-};
 
 class CommandLineScreen extends StatefulWidget {
   const CommandLineScreen({super.key});
@@ -57,7 +13,6 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
   final _inputCtrl = TextEditingController();
   final _db = FirebaseFirestore.instance;
   final _myUid = FirebaseAuth.instance.currentUser!.uid;
-  final _gamesService = MiniGamesService();
 
   final List<String> _log = [
     '> система готова. напиши "help" для списка команд',
@@ -82,10 +37,6 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
     return doc.data();
   }
 
-  Future<bool> _isAdmin() async {
-    final data = await _myData();
-    return data?['isAdmin'] == true;
-  }
 
   Future<DocumentSnapshot?> _findUserByUsername(String rawUsername) async {
     final username = rawUsername.replaceFirst('@', '').trim();
@@ -98,15 +49,6 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
     return query.docs.first;
   }
 
-  bool _isPremiumActive(Map<String, dynamic>? data) {
-    if (data == null) return false;
-    if (data['isPremium'] == true) return true;
-    final expiry = data['premiumUntil'];
-    if (expiry is Timestamp) {
-      return expiry.toDate().isAfter(DateTime.now());
-    }
-    return false;
-  }
 
   Future<void> _runCommand(String raw) async {
     final cmd = raw.trim();
@@ -185,22 +127,7 @@ id: $_myUid''');
     _inputCtrl.clear();
   }
 
-  Future<void> _redeemPromoCode(String code) async {
-    try {
-      await _gamesService.economyAction(
-        action: 'promo',
-        code: code,
-      );
-      _print('промокод активирован! 🎁');
-    } catch (e) {
-      _print('ошибка: $e');
-    }
-  }
 
-  Future<void> _handleGiftPurchase({
-    required String giftId,
-    required String? targetUsername,
-  }) async {
     final gift = _gifts[giftId]!;
     final price = gift['price'] as int;
     final requiresPremium = gift['requiresPremium'] == true;
