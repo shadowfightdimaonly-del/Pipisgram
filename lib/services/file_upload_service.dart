@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Загружает видео, аудио и документы через Cloudflare Worker в Filebase.
 /// Возвращает URL Worker, по которому файл можно скачать.
@@ -13,6 +14,10 @@ class FileUploadService {
     try {
       final bytes = await File(filePath).readAsBytes();
       final contentType = _contentType(fileName);
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return null;
+      final token = await user.getIdToken(true);
+      if (token == null || token.isEmpty) return null;
 
       final uri = Uri.parse('$_workerUrl/upload').replace(
         queryParameters: {'filename': fileName},
@@ -23,6 +28,7 @@ class FileUploadService {
             uri,
             headers: {
               'Content-Type': contentType,
+              'Authorization': 'Bearer $token',
             },
             body: bytes,
           )
