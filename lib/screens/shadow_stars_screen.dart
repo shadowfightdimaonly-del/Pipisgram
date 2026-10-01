@@ -17,7 +17,7 @@ class ShadowStarsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Теневые звёзды'),
+        title: const Text('Ядра'),
         centerTitle: true,
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -64,7 +64,7 @@ class ShadowStarsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 18),
                       const Text(
-                        'Теневые звёзды',
+                        'Ядра',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
@@ -110,7 +110,7 @@ class ShadowStarsScreen extends StatelessWidget {
                     Icons.info_outline,
                     color: Color(0xFF6F2A86),
                   ),
-                  title: Text('Теневая валюта Pipisgram'),
+                  title: Text('Валюта Pipisgram: ядра'),
                   subtitle: Text(
                     'Баланс обновляется автоматически после покупок, переводов и наград.',
                   ),
