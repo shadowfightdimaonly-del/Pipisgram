@@ -237,7 +237,7 @@ class _TicketViewState extends State<TicketView> {
                       final result = await showDialog<Map<String, dynamic>>(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: const Text('🌟 Списание звёзд 🌟'),
+                          title: const Text('🌟 Списание ядер 🌟'),
                           content: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -245,7 +245,7 @@ class _TicketViewState extends State<TicketView> {
                                 controller: amountController,
                                 keyboardType: TextInputType.number,
                                 decoration: const InputDecoration(
-                                  labelText: 'Количество звёзд',
+                                  labelText: 'Количество ядер',
                                   hintText: '70',
                                   prefixText: '🌟 ',
                                 ),
