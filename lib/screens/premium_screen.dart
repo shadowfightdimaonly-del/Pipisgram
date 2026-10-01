@@ -76,13 +76,13 @@ class _PremiumScreenState extends State<PremiumScreen> {
                             fontWeight: FontWeight.bold)),
                     if (!_premium) ...[
                       const SizedBox(height: 8),
-                      const Text('750★ навсегда',
+                      const Text('750 ядер навсегда',
                           style: TextStyle(fontSize: 18)),
                       const SizedBox(height: 14),
                       FilledButton.icon(
                         onPressed: _buying ? null : _buy,
                         icon: const Icon(Icons.stars),
-                        label: Text(_buying ? 'Покупка...' : 'Купить Premium 🌟'),
+                        label: Text(_buying ? 'Покупка...' : 'Купить Premium'),
                       ),
                     ],
                   ]),
