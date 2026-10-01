@@ -20,6 +20,7 @@ import 'group_info_screen.dart';
 import 'view_profile_screen.dart';
 import 'profile_settings_screen.dart';
 import 'chat_appearance_screen.dart';
+import 'message_bubble_appearance_screen.dart';
 
 enum _UploadStatus { uploading, error }
 
