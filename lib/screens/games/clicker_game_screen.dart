@@ -144,7 +144,7 @@ class _ClickerGameScreenState extends State<ClickerGameScreen>
                           style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 4),
                       Text(
-                          'Доступно к выводу: $_availableTaps тапов = $availableStars★',
+                          'Доступно к выводу: $_availableTaps тапов = $availableStars ядер',
                           style: const TextStyle(color: Colors.grey)),
                     ],
                   ),
