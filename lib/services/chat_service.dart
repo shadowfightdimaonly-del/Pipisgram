@@ -23,7 +23,7 @@ class ChatService {
         final lastMessage = data['lastMessage'] ?? '';
         final lastMessageTime =
             (data['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime.now();
-        final unreadCount = (data['unread_$_myUid'] ?? 0) as int;
+        final unreadCount = await _countUnreadMessages(doc.id);
 
         if (isGroup) {
           return ChatPreview(
@@ -69,6 +69,19 @@ class ChatService {
       return chats;
     });
   }
+  Future<int> _countUnreadMessages(String chatId) async {
+    final snap = await _db
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .where('read', isEqualTo: false)
+        .get();
+
+    return snap.docs
+        .where((doc) => doc.data()['senderId'] != _myUid)
+        .length;
+  }
+
   Future<String> getOrCreateChat(String otherUid) async {
     final isSelfChat = otherUid == _myUid;
 
@@ -155,39 +168,30 @@ class ChatService {
 
   /// Отмечает как прочитанные все чужие сообщения в чате
   Future<void> markMessagesAsRead(String chatId) async {
-    final unread = await _db
+    final messagesRef = _db
         .collection('chats')
         .doc(chatId)
-        .collection('messages')
+        .collection('messages');
+
+    final unread = await messagesRef
         .where('read', isEqualTo: false)
         .get();
 
-    for (var doc in unread.docs) {
-      final data = doc.data();
-      if (data['senderId'] != _myUid) {
-        await doc.reference.update({'read': true});
+    final foreignUnread =
+        unread.docs.where((doc) => doc.data()['senderId'] != _myUid).toList();
+
+    for (var i = 0; i < foreignUnread.length; i += 450) {
+      final batch = _db.batch();
+      final end = (i + 450 < foreignUnread.length)
+          ? i + 450
+          : foreignUnread.length;
+      for (final doc in foreignUnread.sublist(i, end)) {
+        batch.update(doc.reference, {'read': true});
       }
-    }
-
-    await _db.collection('chats').doc(chatId).update({
-      'unread_$_myUid': 0,
-    });
-  }
-
-  Future<void> _incrementUnreadForRecipients(String chatId) async {
-    final chatDoc = await _db.collection('chats').doc(chatId).get();
-    final chatData = chatDoc.data();
-    if (chatData == null) return;
-
-    final participants = List<String>.from(chatData['participants'] ?? []);
-    final recipients = participants.where((uid) => uid != _myUid);
-
-    for (final uid in recipients) {
-      await chatDoc.reference.update({
-        'unread_$uid': FieldValue.increment(1),
-      });
+      await batch.commit();
     }
   }
+
 
   Future<void> sendImageMessage(String chatId, String imageUrl) async {
     final msgRef = _db.collection('chats').doc(chatId).collection('messages');
@@ -210,7 +214,6 @@ class ChatService {
       'lastMessage': '📷 Фото',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
-    await _incrementUnreadForRecipients(chatId);
 
     final chatDoc = await _db.collection('chats').doc(chatId).get();
     final chatData = chatDoc.data();
@@ -267,7 +270,6 @@ class ChatService {
       'lastMessage': '🎥 Видео',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
-    await _incrementUnreadForRecipients(chatId);
 
     final chatDoc = await _db.collection('chats').doc(chatId).get();
     final chatData = chatDoc.data();
@@ -319,7 +321,6 @@ class ChatService {
       'lastMessage': '🎵 Аудио',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
-    await _incrementUnreadForRecipients(chatId);
 
     await _sendMediaNotification(chatId, myUsername, '🎵 Аудио', 'аудио');
   }
@@ -345,7 +346,6 @@ class ChatService {
       'lastMessage': '📎 $fileName',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
-    await _incrementUnreadForRecipients(chatId);
 
     await _sendMediaNotification(chatId, myUsername, '📎 $fileName', 'файл');
   }
@@ -402,7 +402,6 @@ class ChatService {
       'lastMessage': '😀 Эмодзи',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
-    await _incrementUnreadForRecipients(chatId);
   }
 
   Future<void> sendMessage(String chatId, String text) async {
@@ -427,7 +426,6 @@ class ChatService {
       'lastMessage': text,
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
-    await _incrementUnreadForRecipients(chatId);
 
     final chatDoc = await _db.collection('chats').doc(chatId).get();
     final chatData = chatDoc.data();
