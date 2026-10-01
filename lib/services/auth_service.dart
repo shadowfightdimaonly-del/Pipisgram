@@ -94,11 +94,19 @@ class AuthService {
 
       // Довыдача кода для аккаунтов, созданных до введения этой функции
       if (data != null && (data['userCode'] == null || data['userCode'] == '')) {
-        updates['userCode'] = await _generateUniqueCode();
+        try {
+          updates['userCode'] = await _generateUniqueCode();
+        } catch (_) {
+          // Старый аккаунт без кода не должен ломать сам вход.
+        }
       }
 
       if (updates.isNotEmpty) {
-        await userRef.update(updates);
+        try {
+          await userRef.update(updates);
+        } catch (_) {
+          // Не блокируем авторизацию из-за необязательного профиля.
+        }
       }
 
       await OneSignal.login(_auth.currentUser!.uid);
@@ -182,7 +190,11 @@ class AuthService {
     final doc = await userRef.get();
     final data = doc.data();
     if (data != null && (data['userCode'] == null || data['userCode'] == '')) {
-      await userRef.update({'userCode': await _generateUniqueCode()});
+      try {
+        await userRef.update({'userCode': await _generateUniqueCode()});
+      } catch (_) {
+        // Не ломаем запуск приложения из-за необязательной довыдачи кода.
+      }
     }
   }
 
