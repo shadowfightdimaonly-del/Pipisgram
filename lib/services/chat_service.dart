@@ -77,9 +77,10 @@ class ChatService {
         .where('read', isEqualTo: false)
         .get();
 
-    return snap.docs
-        .where((doc) => doc.data()['senderId'] != _myUid)
-        .length;
+    return snap.docs.where((doc) {
+      final senderId = doc.data()['senderId']?.toString() ?? '';
+      return senderId.isNotEmpty && senderId != _myUid;
+    }).length;
   }
 
   Future<String> getOrCreateChat(String otherUid) async {
@@ -190,8 +191,10 @@ class ChatService {
         .where('read', isEqualTo: false)
         .get();
 
-    final foreignUnread =
-        unread.docs.where((doc) => doc.data()['senderId'] != _myUid).toList();
+    final foreignUnread = unread.docs.where((doc) {
+      final senderId = doc.data()['senderId']?.toString() ?? '';
+      return senderId.isNotEmpty && senderId != _myUid;
+    }).toList();
 
     for (var i = 0; i < foreignUnread.length; i += 450) {
       final batch = _db.batch();
