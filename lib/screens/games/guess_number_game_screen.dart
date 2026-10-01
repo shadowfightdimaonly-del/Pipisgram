@@ -80,7 +80,7 @@ class _GuessNumberGameScreenState extends State<GuessNumberGameScreen> {
           _attemptsLeft = newAttemptsLeft;
           _lastWon = won;
           _lastResult = won
-              ? 'Угадал! Загаданное число было $secretNumber. +1★'
+              ? 'Угадал! Загаданное число было $secretNumber. +1 ядро'
               : 'Не угадал. Загаданное число было $secretNumber';
           _selectedNumber = null;
         });
