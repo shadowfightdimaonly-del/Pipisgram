@@ -133,17 +133,8 @@ class _CommandLineScreenState extends State<CommandLineScreen> {
   clear                       — очистить консоль
   users count                 — сколько всего зарегистрировано
   version                     — версия приложения
-  balance                     — сколько у тебя звёзд и статус premium
-  change_username <новый>     — сменить юзернейм
-  shadow_star <кол-во> @ник   — подарить звёзды
-  penalty <кол-во> @ник       — штраф звёздами (админ)
-  buy_premium                 — купить Premium (${_premiumPrice}★)
-  give_premium @ник           — подарить Premium (${_premiumPrice}★ с тебя)
-  buy_gift <1-5>                — купить подарок себе
-  gift <1-5> @ник              — подарить подарок
-  change_username_other @ник <новый> — сменить чужой юзернейм (подарок 1)
-  mini_game                   — начать мини-игру
-  support                     — написать в техподдержку''');
+  mini_game                   — открыть мини-игры
+  support                     — открыть поддержку''');
         break;
 
       case 'whoami':
