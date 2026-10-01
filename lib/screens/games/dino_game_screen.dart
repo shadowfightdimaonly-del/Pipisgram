@@ -197,7 +197,8 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
   }
 
   Future<void> _cashOut() async {
-    if (_jumps == 0) return;
+    final availableReward = (_jumps * _starsPerJump).floor();
+    if (_jumps == 0 || availableReward <= 0) return;
 
     final jumpsToCashOut = _jumps;
     try {
@@ -221,6 +222,7 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
   @override
   Widget build(BuildContext context) {
     final sessionStars = (_jumps * _starsPerJump);
+    final availableReward = sessionStars.floor();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Ночной бег')),
@@ -246,8 +248,8 @@ class _DinoGameScreenState extends State<DinoGameScreen> {
                   ],
                 ),
                 FilledButton(
-                  onPressed: _jumps > 0 ? _cashOut : null,
-                  child: Text('Забрать ${sessionStars % 1 == 0 ? sessionStars.toInt() : sessionStars}★'),
+                  onPressed: availableReward > 0 ? _cashOut : null,
+                  child: Text('Забрать $availableReward ядер'),
                 ),
               ],
             ),
