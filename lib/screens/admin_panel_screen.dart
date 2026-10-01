@@ -223,7 +223,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
               decoration: const InputDecoration(
                 labelText: 'Количество ядер',
                 hintText: '70',
-                prefixText: '🌟 ',
+                prefixText: '🟣 ',
               ),
             ),
             const SizedBox(height: 8),
@@ -259,7 +259,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     final amount = result['amount'] as int;
     final reason = result['reason'] as String;
     await _confirmAction(
-      '🌟 Подтвердить списание ' + amount.toString() + ' звёзд?',
+      '🟣 Подтвердить списание ' + amount.toString() + ' ядер?',
       'У пользователя будет списано:\n\n🟣 ' + amount.toString() +
           '\n\nПричина: ' + reason,
       () => _help.penalizeUser(user['uid'].toString(), amount, reason),
